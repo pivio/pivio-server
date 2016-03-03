@@ -1,0 +1,30 @@
+{
+  "changeset": {
+    "properties": {
+      "document": {
+        "type": "string"
+      },
+      "timestamp": {
+        "type": "date"
+      },
+      "order": {
+        "type": "long"
+      },
+      "fields": {
+        "type": "nested",
+        "include_in_parent": true,
+        "properties": {
+          "field": {
+            "type": "string"
+          },
+          "previous": {
+            "type": "string"
+          },
+          "current": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

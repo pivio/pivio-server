@@ -1,0 +1,8 @@
+pivio:
+  build: .
+  ports:
+   - "9123:9123"
+  links:
+   - elasticsearch
+elasticsearch:
+  build: src/docker/elasticsearch

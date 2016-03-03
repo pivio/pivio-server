@@ -1,0 +1,65 @@
+buildscript {
+  repositories {
+    jcenter()
+    mavenCentral()
+    maven { url "https://repo.spring.io/libs-release" }
+    maven { url "https://plugins.gradle.org/m2/" }
+  }
+  dependencies {
+    classpath('org.springframework.boot:spring-boot-gradle-plugin:1.3.0.RELEASE')
+    classpath('com.github.ben-manes:gradle-versions-plugin:0.12.0')
+  }
+}
+
+buildscript {
+  ext {
+    springBootVersion = '1.3.2.RELEASE'
+    springLoadedVersion = '1.2.5.RELEASE'
+  }
+  repositories {
+    mavenLocal()
+    mavenCentral()
+    maven { url "http://repo.spring.io/release" }
+    maven { url "http://repo.spring.io/milestone" }
+    maven { url "http://repo.spring.io/snapshot" }
+  }
+  dependencies {
+    classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+    classpath("org.springframework:springloaded:${springLoadedVersion}")
+    classpath('com.github.ben-manes:gradle-versions-plugin:0.11.3')
+    classpath('org.sonarqube.gradle:gradle-sonarqube-plugin:1.1')
+  }
+}
+
+apply plugin: 'java'
+apply plugin: 'idea'
+apply plugin: 'spring-boot'
+apply plugin: 'com.github.ben-manes.versions'
+apply plugin: 'jacoco'
+apply plugin: 'org.sonarqube'
+
+clean {
+  delete "data"
+}
+
+jar {
+  baseName = 'pivio-server'
+  version = '1.0.0'
+}
+
+repositories {
+  mavenLocal()
+  mavenCentral()
+  maven { url "https://repo.spring.io/libs-release" }
+}
+
+dependencies {
+  compile('org.springframework.boot:spring-boot-starter-web')
+  compile('org.springframework.boot:spring-boot-starter-actuator')
+  compile('org.springframework.boot:spring-boot-starter-data-elasticsearch')
+  compile('org.apache.commons:commons-lang3:3.4')
+  compile('org.apache.httpcomponents:httpclient:4.5.1')
+  testCompile('org.springframework.boot:spring-boot-starter-test')
+  testCompile('org.assertj:assertj-core:3.3.0')
+  testCompile('com.jayway.jsonpath:json-path:2.1.0')
+}

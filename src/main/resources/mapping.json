@@ -1,0 +1,54 @@
+{
+  "steckbrief": {
+    "properties": {
+      "type": {
+        "type": "string"
+      },
+      "name": {
+        "type": "string"
+      },
+      "servicename": {
+        "type": "string"
+      },
+      "team": {
+        "type": "string"
+      },
+      "description": {
+        "type": "string"
+      },
+      "vcsroot": {
+        "type": "string"
+      },
+      "links": {
+        "type": "nested",
+        "include_in_parent": true
+      },
+      "dependencies": {
+        "type": "nested",
+        "include_in_parent": true,
+        "properties": {
+          "name": {
+            "type": "string",
+            "analyzer": "simple"
+          },
+          "version": {
+            "type": "string",
+            "analyzer": "simple"
+          },
+          "licences": {
+            "type": "nested",
+            "include_in_parent": true,
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

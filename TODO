@@ -1,0 +1,16 @@
+Fix nested object and arrays in changesets
+Changesets since parameter for hours
+Fix field filter for nested fields
+Check sort for nested fields
+Add nested documents and queries to readme
+Add index example to readme and some more explanations
+Index setup without Spring ES API
+Upgrade to ES 2.x
+Implement handling of optimistic locking
+
+Add notifications
+Make fields configurable: mandatory fields and maybe also possible values per field
+Make changeset fields configurable (working with excludes makes most sense here)
+Add hystrix for elasticsearch access
+Add document link to changeset
+Add swagger documentation for api
