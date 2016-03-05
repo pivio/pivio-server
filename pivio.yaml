@@ -1,0 +1,12 @@
+document_version: 1.0
+id: pivio-server
+team: Pivio
+description: Manages all Pivio documents. Backend by Elasticsearch.
+type: Service
+name: Pivio-Server
+contact: team@pivio.io
+provides:
+ - API:9123
+
+talks_to:
+ - ES:9300
