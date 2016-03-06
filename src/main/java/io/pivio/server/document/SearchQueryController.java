@@ -39,11 +39,13 @@ public class SearchQueryController {
 
   private final Client client;
   private final ObjectMapper mapper;
+  private final FieldFilter fieldFilter;
 
   @Autowired
-  public SearchQueryController(Client client, ObjectMapper mapper) {
+  public SearchQueryController(Client client, ObjectMapper mapper, FieldFilter fieldFilter) {
     this.client = client;
     this.mapper = mapper;
+    this.fieldFilter = fieldFilter;
   }
 
   @RequestMapping(value = "/document", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -98,7 +100,7 @@ public class SearchQueryController {
           if (filterForFields.isEmpty()) {
             searchResult.add(document);
           } else {
-            searchResult.add(filterFields(document, filterForFields));
+            searchResult.add(fieldFilter.filterFields(document, filterForFields));
           }
         }
         searchResponse = client.prepareSearchScroll(searchResponse.getScrollId()).setScroll(new TimeValue(60000)).execute().actionGet();
