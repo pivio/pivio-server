@@ -1,12 +1,41 @@
-document_version: 1.0
 id: pivio-server
-team: Pivio
+document_version: 1.0
+name: Pivio-Server
+short_name: PSRV
+type: service
+owner: Pivio
 description: Manages all Pivio documents. Backend by Elasticsearch.
 type: Service
-name: Pivio-Server
-contact: team@pivio.io
-provides:
- - API:9123
 
-talks_to:
- - ES:9300
+contact: team@pivio.io
+
+links:
+ - homepage: http://pivio.io
+
+tags:
+ - EAM
+ - Pivio
+
+service:
+ provides:
+  - description: REST API for storing pivio documents.
+    service_name: pivio-storage-service
+    protocol: http
+    port: 9123
+    transportation_protocol: tcp
+
+
+ talks_to:
+  - pivio-elasticsearch
+
+network_zone: development
+
+context:
+ belongs_to_bounded_context: pivio
+ visibility: public
+
+runtime:
+ cpu: S
+ ram: S
+ disk: S
+ host_type: docker
