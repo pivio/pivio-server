@@ -7,7 +7,7 @@
       "name": {
         "type": "string"
       },
-      "servicename": {
+      "short_name": {
         "type": "string"
       },
       "team": {
@@ -23,7 +23,7 @@
         "type": "nested",
         "include_in_parent": true
       },
-      "dependencies": {
+      "software_dependencies": {
         "type": "nested",
         "include_in_parent": true,
         "properties": {

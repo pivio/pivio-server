@@ -54,20 +54,20 @@ public class SearchApiTest {
 
     addDocument(objectMapper.createObjectNode().put("id", "no1")
         .put("name", "User Service")
-        .put("servicename", "USS")
+        .put("short_name", "USS")
         .put("type", "service")
         .put("description", RandomStringUtils.random(20))
         .put("team", "lambda")
         .put("newfield1", "test1"));
     addDocument(objectMapper.createObjectNode().put("id", "no2")
         .put("name", "Micro Service 2")
-        .put("servicename", "MSS 2")
+        .put("short_name", "MSS 2")
         .put("type", "service")
         .put("description", RandomStringUtils.random(20))
         .put("team", "lambda"));
     addDocument(objectMapper.createObjectNode().put("id", "no3")
         .put("name", "Micro Service 3")
-        .put("servicename", "MSS")
+        .put("short_name", "MSS")
         .put("type", "service")
         .put("description", RandomStringUtils.random(20))
         .put("team", "lambda")
@@ -75,7 +75,7 @@ public class SearchApiTest {
         .put("newfield2", "test"));
     addDocument(objectMapper.createObjectNode().put("id", "no4")
         .put("name", "Service 4")
-        .put("servicename", "MSS")
+        .put("short_name", "MSS")
         .put("type", "service")
         .put("description", RandomStringUtils.random(20))
         .put("team", "other")
@@ -83,11 +83,11 @@ public class SearchApiTest {
 
     addDocument(objectMapper.createObjectNode().put("id", "nestedObject")
         .put("name", "Service 5")
-        .put("servicename", "NOS")
+        .put("short_name", "NOS")
         .put("type", "service")
         .put("description", RandomStringUtils.random(20))
         .put("team", "nestedTeam")
-        .set("dependencies", objectMapper.createArrayNode()
+        .set("software_dependencies", objectMapper.createArrayNode()
             .add(objectMapper.createObjectNode()
                 .put("name", "de.websitename:file.jar")
                 .set("licences", objectMapper.createArrayNode()
@@ -98,7 +98,7 @@ public class SearchApiTest {
 
     addDocument(objectMapper.createObjectNode().put("id", "array")
         .put("name", "Service Array")
-        .put("servicename", "ARR")
+        .put("short_name", "ARR")
         .put("type", "service")
         .put("description", RandomStringUtils.random(20))
         .put("team", "arrayTeam")
@@ -106,7 +106,7 @@ public class SearchApiTest {
 
     addDocument(objectMapper.createObjectNode().put("id", "array2")
         .put("name", "Service Array 2")
-        .put("servicename", "ARR2")
+        .put("short_name", "ARR2")
         .put("type", "service")
         .put("description", RandomStringUtils.random(20))
         .put("team", "arrayTeam")
@@ -138,23 +138,23 @@ public class SearchApiTest {
   }
 
   @Test
-  public void sortResultsDescendingByServicenameField() throws IOException {
-    ArrayNode searchResult = executeSearch(teamLambdaQuery, "newfield1", "servicename:desc");
+  public void sortResultsDescendingByshort_nameField() throws IOException {
+    ArrayNode searchResult = executeSearch(teamLambdaQuery, "newfield1", "short_name:desc");
     assertThat(searchResult.findValues("id")).extracting(JsonNode::textValue).containsExactly("no1", "no3", "no2");
   }
 
   @Test
-  public void sortResultsAscendingByServicenameFieldWithCommaAfterFieldInParameter() throws IOException {
-    ArrayNode searchResult = executeSearch(teamLambdaQuery, "newfield1", "servicename:asc,");
+  public void sortResultsAscendingByshort_nameFieldWithCommaAfterFieldInParameter() throws IOException {
+    ArrayNode searchResult = executeSearch(teamLambdaQuery, "newfield1", "short_name:asc,");
     assertThat(searchResult.findValues("id")).extracting(JsonNode::textValue).containsExactly("no2", "no3", "no1");
   }
 
   @Test
-  public void sortResultsAscendingByServicenameAndDescendingByTeamField() throws IOException {
+  public void sortResultsAscendingByshort_nameAndDescendingByTeamField() throws IOException {
     ObjectNode searchQuery = objectMapper.createObjectNode();
     searchQuery.putObject("match_all");
 
-    ArrayNode searchResult = executeSearch(searchQuery, "", "servicename:asc,team:desc");
+    ArrayNode searchResult = executeSearch(searchQuery, "", "short_name:asc,team:desc");
     assertThat(searchResult.findValues("id")).extracting(JsonNode::textValue).containsExactly("no2", "array", "array2", "no4", "no3", "nestedObject", "no1");
   }
 
@@ -172,7 +172,7 @@ public class SearchApiTest {
   public void queryForNestedObject() throws IOException {
     ObjectNode searchQuery = objectMapper.createObjectNode();
     ObjectNode nested = searchQuery.putObject("nested");
-    nested.put("path", "dependencies.licences");
+    nested.put("path", "software_dependencies.licences");
     ObjectNode nestedQuery = nested.putObject("query");
     ObjectNode matchQuery = nestedQuery.putObject("match");
     matchQuery.put("key", "gpl");
@@ -205,7 +205,7 @@ public class SearchApiTest {
   public void queryForValuesWithColon() throws IOException {
     ObjectNode searchQuery = objectMapper.createObjectNode();
     ObjectNode matchQuery = searchQuery.putObject("match");
-    matchQuery.put("dependencies.name", "websitename");
+    matchQuery.put("software_dependencies.name", "websitename");
 
     ArrayNode searchResult = executeSearch(searchQuery, "", "");
     assertThat(searchResult.findValues("id")).extracting(JsonNode::textValue).containsExactly("nestedObject");
@@ -228,14 +228,14 @@ public class SearchApiTest {
   @Test
   public void badRequestOnSortParameterWithMissingColon() throws IOException {
     ResponseEntity<JsonNode> responseEntity = restTemplate.getForEntity("http://localhost:" + port + "/document?query="
-        + URLEncoder.encode(teamLambdaQuery.toString(), "UTF-8") + "&sort=servicenameasc", JsonNode.class);
+        + URLEncoder.encode(teamLambdaQuery.toString(), "UTF-8") + "&sort=short_nameasc", JsonNode.class);
     assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
   }
 
   @Test
   public void badRequestOnSortParameterWithWrongSortOrder() throws IOException {
     ResponseEntity<JsonNode> responseEntity = restTemplate.getForEntity("http://localhost:" + port + "/document?query="
-        + URLEncoder.encode(teamLambdaQuery.toString(), "UTF-8") + "&sort=servicename:asce", JsonNode.class);
+        + URLEncoder.encode(teamLambdaQuery.toString(), "UTF-8") + "&sort=short_name:asce", JsonNode.class);
     assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
   }
 

@@ -6,6 +6,7 @@ type: service
 owner: Pivio
 description: Manages all Pivio documents. Backend by Elasticsearch.
 type: Service
+team: pivio
 
 contact: team@pivio.io
 
