@@ -57,20 +57,20 @@ public class SearchApiTest {
         .put("short_name", "USS")
         .put("type", "service")
         .put("description", RandomStringUtils.random(20))
-        .put("team", "lambda")
+        .put("owner", "lambda")
         .put("newfield1", "test1"));
     addDocument(objectMapper.createObjectNode().put("id", "no2")
         .put("name", "Micro Service 2")
         .put("short_name", "MSS 2")
         .put("type", "service")
         .put("description", RandomStringUtils.random(20))
-        .put("team", "lambda"));
+        .put("owner", "lambda"));
     addDocument(objectMapper.createObjectNode().put("id", "no3")
         .put("name", "Micro Service 3")
         .put("short_name", "MSS")
         .put("type", "service")
         .put("description", RandomStringUtils.random(20))
-        .put("team", "lambda")
+        .put("owner", "lambda")
         .put("newfield1", "test2")
         .put("newfield2", "test"));
     addDocument(objectMapper.createObjectNode().put("id", "no4")
@@ -78,7 +78,7 @@ public class SearchApiTest {
         .put("short_name", "MSS")
         .put("type", "service")
         .put("description", RandomStringUtils.random(20))
-        .put("team", "other")
+        .put("owner", "other")
         .put("newfield1", "test3"));
 
     addDocument(objectMapper.createObjectNode().put("id", "nestedObject")
@@ -86,7 +86,7 @@ public class SearchApiTest {
         .put("short_name", "NOS")
         .put("type", "service")
         .put("description", RandomStringUtils.random(20))
-        .put("team", "nestedTeam")
+        .put("owner", "nestedTeam")
         .set("software_dependencies", objectMapper.createArrayNode()
             .add(objectMapper.createObjectNode()
                 .put("name", "de.websitename:file.jar")
@@ -101,7 +101,7 @@ public class SearchApiTest {
         .put("short_name", "ARR")
         .put("type", "service")
         .put("description", RandomStringUtils.random(20))
-        .put("team", "arrayTeam")
+        .put("owner", "arrayTeam")
         .set("arrayfield", objectMapper.createArrayNode().add("a").add("c").add("bb").add("bd")));
 
     addDocument(objectMapper.createObjectNode().put("id", "array2")
@@ -109,14 +109,14 @@ public class SearchApiTest {
         .put("short_name", "ARR2")
         .put("type", "service")
         .put("description", RandomStringUtils.random(20))
-        .put("team", "arrayTeam")
+        .put("owner", "arrayTeam")
         .set("arrayfield", objectMapper.createArrayNode().add("d").add("b").add("e")));
 
     elasticsearchTemplate.refresh(PivioDocument.class, true);
 
     teamLambdaQuery = objectMapper.createObjectNode();
     ObjectNode match = teamLambdaQuery.putObject("match");
-    match.put("team", "lambda");
+    match.put("owner", "lambda");
   }
 
   @Test
@@ -154,7 +154,7 @@ public class SearchApiTest {
     ObjectNode searchQuery = objectMapper.createObjectNode();
     searchQuery.putObject("match_all");
 
-    ArrayNode searchResult = executeSearch(searchQuery, "", "short_name:asc,team:desc");
+    ArrayNode searchResult = executeSearch(searchQuery, "", "short_name:asc,owner:desc");
     assertThat(searchResult.findValues("id")).extracting(JsonNode::textValue).containsExactly("no2", "array", "array2", "no4", "no3", "nestedObject", "no1");
   }
 

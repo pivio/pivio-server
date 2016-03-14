@@ -10,7 +10,7 @@
       "short_name": {
         "type": "string"
       },
-      "team": {
+      "owner": {
         "type": "string"
       },
       "description": {

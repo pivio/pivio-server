@@ -16,7 +16,7 @@ public class PivioDocument {
   private String type;
   private String name;
   private String serviceName;
-  private String team;
+  private String owner;
   private String description;
 
   public static class PivioDocumentBuild {
@@ -48,8 +48,8 @@ public class PivioDocument {
       return this;
     }
 
-    public PivioDocumentBuild team(String team) {
-      pivioDocument.setTeam(team);
+    public PivioDocumentBuild owner(String team) {
+      pivioDocument.setOwner(team);
       return this;
     }
 
@@ -58,12 +58,12 @@ public class PivioDocument {
     }
   }
 
-  public PivioDocument(String id, String type, String name, String serviceName, String team, String description) {
+  public PivioDocument(String id, String type, String name, String serviceName, String owner, String description) {
     this.id = id;
     this.type = type;
     this.name = name;
     this.serviceName = serviceName;
-    this.team = team;
+    this.owner = owner;
     this.description = description;
   }
 
@@ -106,12 +106,12 @@ public class PivioDocument {
     this.serviceName = serviceName;
   }
 
-  public String getTeam() {
-    return team;
+  public String getOwner() {
+    return owner;
   }
 
-  public void setTeam(String team) {
-    this.team = team;
+  public void setOwner(String owner) {
+    this.owner = owner;
   }
 
   public String getDescription() {
@@ -145,7 +145,7 @@ public class PivioDocument {
     if (serviceName != null ? !serviceName.equals(that.serviceName) : that.serviceName != null) {
       return false;
     }
-    if (!team.equals(that.team)) {
+    if (!owner.equals(that.owner)) {
       return false;
     }
     if (!type.equals(that.type)) {
@@ -161,7 +161,7 @@ public class PivioDocument {
     result = 31 * result + type.hashCode();
     result = 31 * result + name.hashCode();
     result = 31 * result + (serviceName != null ? serviceName.hashCode() : 0);
-    result = 31 * result + team.hashCode();
+    result = 31 * result + owner.hashCode();
     result = 31 * result + description.hashCode();
     return result;
   }

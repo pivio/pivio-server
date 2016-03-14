@@ -62,7 +62,7 @@ public class ChangesetJsonSerializerTest {
   public void shouldAllChangedFields() throws JsonProcessingException {
     Map<String, Pair<String, String>> changedFields = new TreeMap<>(); // TreeMap to keep sorted order for easier assertions
     changedFields.put("name", Pair.of("Micro", "Macro"));
-    changedFields.put("team", Pair.of("Lambda", "User"));
+    changedFields.put("owner", Pair.of("Lambda", "User"));
     Changeset changeset = new Changeset("randomId", 1L, changedFields);
 
     JsonNode serializedChangedFields = objectMapper.valueToTree(changeset).get("fields");
@@ -73,9 +73,9 @@ public class ChangesetJsonSerializerTest {
     assertThat(changedNameField.get("current").textValue()).isEqualTo("Macro");
     assertThat(changedNameField.get("previous").textValue()).isEqualTo("Micro");
 
-    JsonNode changedTeamField = serializedChangedFields.get(1);
-    assertThat(changedTeamField.get("field").textValue()).isEqualTo("team");
-    assertThat(changedTeamField.get("current").textValue()).isEqualTo("User");
-    assertThat(changedTeamField.get("previous").textValue()).isEqualTo("Lambda");
+    JsonNode changedOwnerField = serializedChangedFields.get(1);
+    assertThat(changedOwnerField.get("field").textValue()).isEqualTo("owner");
+    assertThat(changedOwnerField.get("current").textValue()).isEqualTo("User");
+    assertThat(changedOwnerField.get("previous").textValue()).isEqualTo("Lambda");
   }
 }

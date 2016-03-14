@@ -44,7 +44,7 @@ public class DocumentController {
     this.client = client;
     this.changesetService = changesetService;
     this.mapper = mapper;
-    mandatoryFields = Arrays.asList("id", "type", "name", "team", "description");
+    mandatoryFields = Arrays.asList("id", "type", "name", "owner", "description");
   }
 
   @RequestMapping(method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)

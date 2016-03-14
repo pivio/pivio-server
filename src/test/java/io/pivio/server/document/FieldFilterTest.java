@@ -46,7 +46,7 @@ public class FieldFilterTest {
         "      ]" +
         "    }" +
         "  }," +
-        "  \"team\": \"Pivio\"," +
+        "  \"owner\": \"Pivio\"," +
         "  \"id\": \"349534957349857387534\"," +
         "  \"type\": \"Tool\"" +
         "}"+

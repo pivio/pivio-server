@@ -65,7 +65,7 @@ public class ChangesetApiTest {
         .put("name", "MicroService")
         .put("serviceName", "MS")
         .put("description", "Super service...")
-        .put("team", "Awesome Team");
+        .put("owner", "Awesome Team");
   }
 
   @Test
@@ -83,7 +83,7 @@ public class ChangesetApiTest {
     JsonNode changedFields = changesets.get(0).get("fields");
 
     assertThat(changedFields.findValues("field").stream().map(JsonNode::textValue))
-        .containsOnly("id", "type", "serviceName", "name", "description", "team");
+        .containsOnly("id", "type", "serviceName", "name", "description", "owner");
   }
 
   @Test
@@ -98,7 +98,7 @@ public class ChangesetApiTest {
     assertThatFieldHasCorrectDiff(firstChangeset, "name", "", "MicroService");
     assertThatFieldHasCorrectDiff(firstChangeset, "serviceName", "", "MS");
     assertThatFieldHasCorrectDiff(firstChangeset, "description", "", "Super service...");
-    assertThatFieldHasCorrectDiff(firstChangeset, "team", "", "Awesome Team");
+    assertThatFieldHasCorrectDiff(firstChangeset, "owner", "", "Awesome Team");
   }
 
   @Test
@@ -174,7 +174,7 @@ public class ChangesetApiTest {
   @Test
   public void changesetShouldOnlyHaveDiffsOfChangeFields() {
     addDocument(document);
-    addDocument(document.put("name", "NewService").put("team", "User Team"));
+    addDocument(document.put("name", "NewService").put("owner", "User Team"));
 
     String changesets = retrieveChangesetsAsString("randomId");
     JSONArray changeset = JsonPath.read(changesets, "$.[?(@.order == 2)]");
@@ -184,7 +184,7 @@ public class ChangesetApiTest {
     assertThat(changedFields).hasSize(2);
 
     assertThatFieldHasCorrectDiff(changeset.get(0), "name", "MicroService", "NewService");
-    assertThatFieldHasCorrectDiff(changeset.get(0), "team", "Awesome Team", "User Team");
+    assertThatFieldHasCorrectDiff(changeset.get(0), "owner", "Awesome Team", "User Team");
   }
 
   @Test
@@ -192,7 +192,7 @@ public class ChangesetApiTest {
     addDocument(document);
     document = document.put("name", "NewService");
     addDocument(document);
-    document = document.put("team", "User Team");
+    document = document.put("owner", "User Team");
     addDocument(document);
 
     String changesets = retrieveChangesetsAsString("randomId");
@@ -213,7 +213,7 @@ public class ChangesetApiTest {
         .put("name", "MicroService")
         .put("serviceName", "MS")
         .put("description", "Super service...")
-        .put("team", "Awesome Team"));
+        .put("owner", "Awesome Team"));
 
     ResponseEntity<JsonNode> responseEntity = restTemplate.getForEntity("http://localhost:" + port + "/changeset", JsonNode.class);
     assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -258,7 +258,7 @@ public class ChangesetApiTest {
         .put("name", "MicroService2")
         .put("serviceName", "MS2")
         .put("description", "Super service...")
-        .put("team", "Awesome Team"));
+        .put("owner", "Awesome Team"));
     persistChangesets(oneDayAgo, twoDaysAgo, createChangesetDaysAgo(1L, 8));
     expectChangesets("http://localhost:" + port + "/changeset?since=7d", oneDayAgo, twoDaysAgo);
   }
