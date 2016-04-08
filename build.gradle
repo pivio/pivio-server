@@ -71,3 +71,7 @@ dependencies {
   testCompile('org.assertj:assertj-core:3.3.0')
   testCompile('com.jayway.jsonpath:json-path:2.1.0')
 }
+
+task wrapper(type: Wrapper) {
+	gradleVersion = '2.9'
+}
