@@ -12,7 +12,9 @@ import org.joda.time.format.ISODateTimeFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -164,7 +166,7 @@ public class DocumentController {
   }
 
   @RequestMapping(value = "/{id}", method = RequestMethod.DELETE)
-  public void delete(@PathVariable String id) throws IOException {
+  public ResponseEntity delete(@PathVariable String id) throws IOException {
     LOG.info("Try to delete document {}", id);
     if (client.prepareDelete("steckbrief", "steckbrief", id).execute().actionGet().isFound()) {
       client.prepareDeleteByQuery("changeset").setTypes("changeset")
@@ -172,8 +174,10 @@ public class DocumentController {
           .execute()
           .actionGet();
       LOG.info("Deleted document {} successfully", id);
+      return ResponseEntity.status(HttpStatus.ACCEPTED).body(null);
     } else {
       LOG.warn("Could not delete document {}", id);
+      return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
     }
   }
 }
