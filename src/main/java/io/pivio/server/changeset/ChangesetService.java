@@ -22,65 +22,65 @@ import java.util.Set;
 @Component
 public class ChangesetService {
 
-  private final Client client;
-  private final ObjectMapper mapper;
-  private final Set<String> excludedFields;
+    private final Client client;
+    private final ObjectMapper mapper;
+    private final Set<String> excludedFields;
 
-  @Autowired
-  public ChangesetService(Client client, ObjectMapper mapper) {
-    this.client = client;
-    this.mapper = mapper;
+    @Autowired
+    public ChangesetService(Client client, ObjectMapper mapper) {
+        this.client = client;
+        this.mapper = mapper;
 
-    excludedFields = new HashSet<>();
-    excludedFields.add("/created");
-    excludedFields.add("/lastUpload");
-    excludedFields.add("/lastUpdate");
-  }
-
-  public Changeset computeNext(JsonNode document) throws IOException {
-    final String documentId = document.get("id").asText();
-    final Optional<JsonNode> persistentDocument = getDocument(documentId);
-    final JsonNode patch = JsonDiff.asJson(persistentDocument.orElse(mapper.createObjectNode()), document);
-    return new Changeset(documentId, retrieveLastOrderNumber(documentId) + 1L, filterExcludedFields(patch));
-  }
-
-  private ArrayNode filterExcludedFields(JsonNode json) {
-    ArrayNode filteredJson = mapper.createArrayNode();
-    Iterator<JsonNode> elements = json.elements();
-    while (elements.hasNext()) {
-      JsonNode current = elements.next();
-      if (current.has("path") && !excludedFields.contains(current.get("path").textValue())) {
-        filteredJson.add(current);
-      }
+        excludedFields = new HashSet<>();
+        excludedFields.add("/created");
+        excludedFields.add("/lastUpload");
+        excludedFields.add("/lastUpdate");
     }
-    return filteredJson;
-  }
 
-  private long retrieveLastOrderNumber(String documentId) throws IOException {
-    Optional<JsonNode> lastChangeset = getLastChangeset(documentId);
-    return lastChangeset.map(c -> c.get("order").longValue()).orElse(0L);
-  }
-
-  private Optional<JsonNode> getDocument(String id) throws IOException {
-    GetResponse response = client.prepareGet("steckbrief", "steckbrief", id).execute().actionGet();
-    if (response.isExists()) {
-      return Optional.of(mapper.readTree(response.getSourceAsString()));
-    } else {
-      return Optional.empty();
+    public Changeset computeNext(JsonNode document) throws IOException {
+        final String documentId = document.get("id").asText();
+        final Optional<JsonNode> persistentDocument = getDocument(documentId);
+        final JsonNode patch = JsonDiff.asJson(persistentDocument.orElse(mapper.createObjectNode()), document);
+        return new Changeset(documentId, retrieveLastOrderNumber(documentId) + 1L, filterExcludedFields(patch));
     }
-  }
 
-  private Optional<JsonNode> getLastChangeset(String documentId) throws IOException {
-    SearchResponse searchResponse = client.prepareSearch("changeset").setTypes("changeset")
-        .setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
-        .setQuery(QueryBuilders.matchQuery("document", documentId))
-        .addSort("order", SortOrder.DESC)
-        .execute()
-        .actionGet();
-    if (searchResponse.getHits().getTotalHits() > 0) {
-      return Optional.of(mapper.readTree(searchResponse.getHits().getAt(0).getSourceAsString()));
-    } else {
-      return Optional.empty();
+    private ArrayNode filterExcludedFields(JsonNode json) {
+        ArrayNode filteredJson = mapper.createArrayNode();
+        Iterator<JsonNode> elements = json.elements();
+        while (elements.hasNext()) {
+            JsonNode current = elements.next();
+            if (current.has("path") && !excludedFields.contains(current.get("path").textValue())) {
+                filteredJson.add(current);
+            }
+        }
+        return filteredJson;
     }
-  }
+
+    private long retrieveLastOrderNumber(String documentId) throws IOException {
+        Optional<JsonNode> lastChangeset = getLastChangeset(documentId);
+        return lastChangeset.map(c -> c.get("order").longValue()).orElse(0L);
+    }
+
+    private Optional<JsonNode> getDocument(String id) throws IOException {
+        GetResponse response = client.prepareGet("steckbrief", "steckbrief", id).execute().actionGet();
+        if (response.isExists()) {
+            return Optional.of(mapper.readTree(response.getSourceAsString()));
+        } else {
+            return Optional.empty();
+        }
+    }
+
+    private Optional<JsonNode> getLastChangeset(String documentId) throws IOException {
+        SearchResponse searchResponse = client.prepareSearch("changeset").setTypes("changeset")
+                .setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
+                .setQuery(QueryBuilders.matchQuery("document", documentId))
+                .addSort("order", SortOrder.DESC)
+                .execute()
+                .actionGet();
+        if (searchResponse.getHits().getTotalHits() > 0) {
+            return Optional.of(mapper.readTree(searchResponse.getHits().getAt(0).getSourceAsString()));
+        } else {
+            return Optional.empty();
+        }
+    }
 }

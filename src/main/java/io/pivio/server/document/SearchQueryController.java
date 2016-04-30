@@ -35,118 +35,118 @@ import java.util.Map;
 @RestController
 public class SearchQueryController {
 
-  private static final Logger LOG = LoggerFactory.getLogger(SearchQueryController.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SearchQueryController.class);
 
-  private final Client client;
-  private final ObjectMapper mapper;
-  private final FieldFilter fieldFilter;
+    private final Client client;
+    private final ObjectMapper mapper;
+    private final FieldFilter fieldFilter;
 
-  @Autowired
-  public SearchQueryController(Client client, ObjectMapper mapper, FieldFilter fieldFilter) {
-    this.client = client;
-    this.mapper = mapper;
-    this.fieldFilter = fieldFilter;
-  }
-
-  @RequestMapping(value = "/document", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-  public JsonNode search(@RequestParam(required = false) String query,
-                         @RequestParam(required = false) String fields,
-                         @RequestParam(required = false) String sort,
-                         HttpServletResponse response) throws IOException {
-
-    if (!isRequestValid(fields, sort)) {
-      LOG.info("Received search query with invalid parameters, fields: {}, sort: {}", fields, sort);
-      response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-      return null;
+    @Autowired
+    public SearchQueryController(Client client, ObjectMapper mapper, FieldFilter fieldFilter) {
+        this.client = client;
+        this.mapper = mapper;
+        this.fieldFilter = fieldFilter;
     }
 
-    final SearchRequestBuilder searchRequest;
-    if (query != null) {
-      searchRequest = client.prepareSearch("steckbrief")
-          .setTypes("steckbrief")
-          .setSearchType(sort != null ? SearchType.DFS_QUERY_THEN_FETCH : SearchType.SCAN)
-          .setScroll(new TimeValue(60000))
-          .setQuery(query)
-          .setSize(100);
-    } else {
-      searchRequest = client.prepareSearch("steckbrief")
-          .setTypes("steckbrief")
-          .setSearchType(sort != null ? SearchType.DFS_QUERY_THEN_FETCH : SearchType.SCAN)
-          .setScroll(new TimeValue(60000))
-          .setQuery(QueryBuilders.matchAllQuery())
-          .setSize(100);
-    }
+    @RequestMapping(value = "/document", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public JsonNode search(@RequestParam(required = false) String query,
+                           @RequestParam(required = false) String fields,
+                           @RequestParam(required = false) String sort,
+                           HttpServletResponse response) throws IOException {
 
-    if (sort != null) {
-      String[] sortPairs = sort.split(",");
-      for (String sortPair : sortPairs) {
-        String[] sortPairConfig = sortPair.split(":");
-        searchRequest.addSort(sortPairConfig[0], "asc".equalsIgnoreCase(sortPairConfig[1]) ? SortOrder.ASC : SortOrder.DESC);
-      }
-    }
-
-    try {
-      SearchResponse searchResponse = searchRequest.execute().actionGet();
-      List<String> filterForFields = new LinkedList<>();
-      if (fields != null && fields.split(",").length > 0) {
-        filterForFields.addAll(Arrays.asList(fields.split(",")));
-        filterForFields.add("id");
-      }
-
-      ArrayNode searchResult = mapper.createArrayNode();
-      while (true) {
-        for (SearchHit searchHit : searchResponse.getHits().getHits()) {
-          JsonNode document = mapper.readTree(searchHit.getSourceAsString());
-          if (filterForFields.isEmpty()) {
-            searchResult.add(document);
-          } else {
-            searchResult.add(fieldFilter.filterFields(document, filterForFields));
-          }
+        if (!isRequestValid(fields, sort)) {
+            LOG.info("Received search query with invalid parameters, fields: {}, sort: {}", fields, sort);
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            return null;
         }
-        searchResponse = client.prepareSearchScroll(searchResponse.getScrollId()).setScroll(new TimeValue(60000)).execute().actionGet();
-        if (searchResponse.getHits().getHits().length == 0) {
-          break;
+
+        final SearchRequestBuilder searchRequest;
+        if (query != null) {
+            searchRequest = client.prepareSearch("steckbrief")
+                    .setTypes("steckbrief")
+                    .setSearchType(sort != null ? SearchType.DFS_QUERY_THEN_FETCH : SearchType.SCAN)
+                    .setScroll(new TimeValue(60000))
+                    .setQuery(query)
+                    .setSize(100);
+        } else {
+            searchRequest = client.prepareSearch("steckbrief")
+                    .setTypes("steckbrief")
+                    .setSearchType(sort != null ? SearchType.DFS_QUERY_THEN_FETCH : SearchType.SCAN)
+                    .setScroll(new TimeValue(60000))
+                    .setQuery(QueryBuilders.matchAllQuery())
+                    .setSize(100);
         }
-      }
-      return searchResult;
-    } catch (ElasticsearchException e) {
-      LOG.error("Could not execute search successfully, search request for ES: " + searchRequest.toString(), e);
-      response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-      return null;
-    }
-  }
 
-  private boolean isRequestValid(String fields, String sort) {
-    if (fields != null && fields.trim().isEmpty()) {
-      return false;
-    }
-    if (sort == null) {
-      return true;
-    }
-    if (sort.trim().isEmpty()) {
-      return false;
-    }
-    for (String sortPair : sort.split(",")) {
-      String[] sortPairConfig = sortPair.split(":");
-      if (sortPairConfig.length != 2) {
-        return false;
-      }
-      if (!"asc".equalsIgnoreCase(sortPairConfig[1]) && !"desc".equalsIgnoreCase(sortPairConfig[1])) {
-        return false;
-      }
-    }
-    return true;
-  }
+        if (sort != null) {
+            String[] sortPairs = sort.split(",");
+            for (String sortPair : sortPairs) {
+                String[] sortPairConfig = sortPair.split(":");
+                searchRequest.addSort(sortPairConfig[0], "asc".equalsIgnoreCase(sortPairConfig[1]) ? SortOrder.ASC : SortOrder.DESC);
+            }
+        }
 
-  private JsonNode filterFields(JsonNode document, List<String> fields) {
-    ObjectNode filteredDocument = mapper.createObjectNode();
-    Iterator<Map.Entry<String, JsonNode>> allFields = document.fields();
-    while (allFields.hasNext()) {
-      Map.Entry<String, JsonNode> currentField = allFields.next();
-      if (fields.contains(currentField.getKey())) {
-        filteredDocument.set(currentField.getKey(), currentField.getValue());
-      }
+        try {
+            SearchResponse searchResponse = searchRequest.execute().actionGet();
+            List<String> filterForFields = new LinkedList<>();
+            if (fields != null && fields.split(",").length > 0) {
+                filterForFields.addAll(Arrays.asList(fields.split(",")));
+                filterForFields.add("id");
+            }
+
+            ArrayNode searchResult = mapper.createArrayNode();
+            while (true) {
+                for (SearchHit searchHit : searchResponse.getHits().getHits()) {
+                    JsonNode document = mapper.readTree(searchHit.getSourceAsString());
+                    if (filterForFields.isEmpty()) {
+                        searchResult.add(document);
+                    } else {
+                        searchResult.add(fieldFilter.filterFields(document, filterForFields));
+                    }
+                }
+                searchResponse = client.prepareSearchScroll(searchResponse.getScrollId()).setScroll(new TimeValue(60000)).execute().actionGet();
+                if (searchResponse.getHits().getHits().length == 0) {
+                    break;
+                }
+            }
+            return searchResult;
+        } catch (ElasticsearchException e) {
+            LOG.error("Could not execute search successfully, search request for ES: " + searchRequest.toString(), e);
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            return null;
+        }
     }
-    return filteredDocument;
-  }
+
+    private boolean isRequestValid(String fields, String sort) {
+        if (fields != null && fields.trim().isEmpty()) {
+            return false;
+        }
+        if (sort == null) {
+            return true;
+        }
+        if (sort.trim().isEmpty()) {
+            return false;
+        }
+        for (String sortPair : sort.split(",")) {
+            String[] sortPairConfig = sortPair.split(":");
+            if (sortPairConfig.length != 2) {
+                return false;
+            }
+            if (!"asc".equalsIgnoreCase(sortPairConfig[1]) && !"desc".equalsIgnoreCase(sortPairConfig[1])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private JsonNode filterFields(JsonNode document, List<String> fields) {
+        ObjectNode filteredDocument = mapper.createObjectNode();
+        Iterator<Map.Entry<String, JsonNode>> allFields = document.fields();
+        while (allFields.hasNext()) {
+            Map.Entry<String, JsonNode> currentField = allFields.next();
+            if (fields.contains(currentField.getKey())) {
+                filteredDocument.set(currentField.getKey(), currentField.getValue());
+            }
+        }
+        return filteredDocument;
+    }
 }

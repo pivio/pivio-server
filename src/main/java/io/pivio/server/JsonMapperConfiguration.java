@@ -10,12 +10,12 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class JsonMapperConfiguration {
 
-  @Bean
-  public ObjectMapper objectMapper() {
-    ObjectMapper objectMapper = new ObjectMapper();
-    SimpleModule changesetModule = new SimpleModule("Changeset Module");
-    changesetModule.addSerializer(Changeset.class, new ChangesetJsonSerializer());
-    objectMapper.registerModule(changesetModule);
-    return objectMapper;
-  }
+    @Bean
+    public ObjectMapper objectMapper() {
+        ObjectMapper objectMapper = new ObjectMapper();
+        SimpleModule changesetModule = new SimpleModule("Changeset Module");
+        changesetModule.addSerializer(Changeset.class, new ChangesetJsonSerializer());
+        objectMapper.registerModule(changesetModule);
+        return objectMapper;
+    }
 }

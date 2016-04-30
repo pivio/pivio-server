@@ -17,38 +17,38 @@ import java.io.IOException;
 @Component
 public class ElasticsearchQueryHelper {
 
-  private static final Logger LOG = LoggerFactory.getLogger(ElasticsearchQueryHelper.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ElasticsearchQueryHelper.class);
 
-  private final Client client;
-  private final ObjectMapper mapper;
+    private final Client client;
+    private final ObjectMapper mapper;
 
-  @Autowired
-  public ElasticsearchQueryHelper(Client client, ObjectMapper mapper) {
-    this.client = client;
-    this.mapper = mapper;
-  }
-
-  public boolean isDocumentPresent(String index, String type, String id) {
-    return client.prepareGet(index, type, id).execute().actionGet().isExists();
-  }
-
-  public ArrayNode retrieveAllDocuments(SearchRequestBuilder searchRequest) throws IOException {
-    try {
-      SearchResponse searchResponse = searchRequest.execute().actionGet();
-      ArrayNode allDocuments = mapper.createArrayNode();
-      while (true) {
-        for (SearchHit searchHit : searchResponse.getHits().getHits()) {
-          allDocuments.add(mapper.readTree(searchHit.getSourceAsString()));
-        }
-        searchResponse = client.prepareSearchScroll(searchResponse.getScrollId()).setScroll(new TimeValue(60000)).execute().actionGet();
-        if (searchResponse.getHits().getHits().length == 0) {
-          break;
-        }
-      }
-      return allDocuments;
-    } catch (Exception e) {
-      LOG.warn("Could not retrieve all documents for " + searchRequest.toString(), e);
-      return mapper.createArrayNode();
+    @Autowired
+    public ElasticsearchQueryHelper(Client client, ObjectMapper mapper) {
+        this.client = client;
+        this.mapper = mapper;
     }
-  }
+
+    public boolean isDocumentPresent(String index, String type, String id) {
+        return client.prepareGet(index, type, id).execute().actionGet().isExists();
+    }
+
+    public ArrayNode retrieveAllDocuments(SearchRequestBuilder searchRequest) throws IOException {
+        try {
+            SearchResponse searchResponse = searchRequest.execute().actionGet();
+            ArrayNode allDocuments = mapper.createArrayNode();
+            while (true) {
+                for (SearchHit searchHit : searchResponse.getHits().getHits()) {
+                    allDocuments.add(mapper.readTree(searchHit.getSourceAsString()));
+                }
+                searchResponse = client.prepareSearchScroll(searchResponse.getScrollId()).setScroll(new TimeValue(60000)).execute().actionGet();
+                if (searchResponse.getHits().getHits().length == 0) {
+                    break;
+                }
+            }
+            return allDocuments;
+        } catch (Exception e) {
+            LOG.warn("Could not retrieve all documents for " + searchRequest.toString(), e);
+            return mapper.createArrayNode();
+        }
+    }
 }
