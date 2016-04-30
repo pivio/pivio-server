@@ -39,7 +39,10 @@
             "type": "nested",
             "include_in_parent": true,
             "properties": {
-              "name": {
+              "key": {
+                "type": "string"
+              },
+              "fullName": {
                 "type": "string"
               },
               "url": {

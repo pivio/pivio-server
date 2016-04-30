@@ -3,17 +3,14 @@ package io.pivio.server.changeset;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import org.apache.commons.lang3.tuple.Pair;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import io.pivio.server.JsonMapperConfiguration;
 import org.joda.time.DateTime;
 import org.joda.time.format.ISODateTimeFormat;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.text.ParseException;
-import java.util.Collections;
-import java.util.Map;
-import java.util.TreeMap;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -23,59 +20,88 @@ public class ChangesetJsonSerializerTest {
 
   @Before
   public void setup() {
-    objectMapper = new ObjectMapper();
-    SimpleModule changesetModule = new SimpleModule("Changeset Module");
-    changesetModule.addSerializer(Changeset.class, new ChangesetJsonSerializer());
-    objectMapper.registerModule(changesetModule);
+    objectMapper = new JsonMapperConfiguration().objectMapper();
   }
 
   @Test
   public void shouldSerializeDocumentId() throws JsonProcessingException {
-    Changeset changeset = new Changeset("randomId", 1L, Collections.emptyMap());
+    Changeset changeset = new Changeset("randomId", 1L, objectMapper.createArrayNode());
     JsonNode serializedJson = objectMapper.valueToTree(changeset);
     assertThat(serializedJson.get("document").textValue()).isEqualTo("randomId");
   }
 
   @Test
   public void shouldSerializeOrderOfChangeset() throws JsonProcessingException {
-    Changeset changeset = new Changeset("randomId", 12L, Collections.emptyMap());
+    Changeset changeset = new Changeset("randomId", 12L, objectMapper.createArrayNode());
     JsonNode serializedJson = objectMapper.valueToTree(changeset);
     assertThat(serializedJson.get("order").longValue()).isEqualTo(12L);
   }
 
   @Test
   public void shouldSerializeTimestamp() throws JsonProcessingException {
-    Changeset changeset = new Changeset("randomId", 1L, Collections.emptyMap());
+    Changeset changeset = new Changeset("randomId", 1L, objectMapper.createArrayNode());
     JsonNode serializedJson = objectMapper.valueToTree(changeset);
-    assertThat(serializedJson.get("timestamp").textValue()).isNotEmpty();
+    assertThat(serializedJson.get("timestamp").asText()).isNotEmpty();
   }
 
   @Test
   public void shouldSerializeTimestampInISO8601Format() throws JsonProcessingException, ParseException {
-    Changeset changeset = new Changeset("randomId", 1L, Collections.emptyMap());
+    Changeset changeset = new Changeset("randomId", 1L, objectMapper.createArrayNode());
     JsonNode serializedJson = objectMapper.valueToTree(changeset);
     DateTime parsed = ISODateTimeFormat.dateTime().parseDateTime(serializedJson.get("timestamp").textValue());
     assertThat(changeset.getTimestamp()).isEqualTo(parsed);
   }
 
   @Test
-  public void shouldAllChangedFields() throws JsonProcessingException {
-    Map<String, Pair<String, String>> changedFields = new TreeMap<>(); // TreeMap to keep sorted order for easier assertions
-    changedFields.put("name", Pair.of("Micro", "Macro"));
-    changedFields.put("owner", Pair.of("Lambda", "User"));
-    Changeset changeset = new Changeset("randomId", 1L, changedFields);
+  public void shouldSerializedOnlyFieldsNotGetterMethods() throws JsonProcessingException {
+    Changeset changeset = new Changeset("randomId", 1L, objectMapper.createArrayNode());
+    JsonNode serializedJson = objectMapper.valueToTree(changeset);
+    assertThat(serializedJson.fieldNames()).containsOnly("document", "timestamp", "order", "fields");
+  }
+
+  @Test
+  public void shouldSerializeAllChangedFields() throws JsonProcessingException {
+    ArrayNode changed = objectMapper.createArrayNode();
+    changed.add(objectMapper.createObjectNode()
+            .put("op", "REPLACE")
+            .put("path", "/name")
+            .put("value", "0"));
+    Changeset changeset = new Changeset("randomId", 1L, changed);
 
     JsonNode serializedChangedFields = objectMapper.valueToTree(changeset).get("fields");
     assertThat(serializedChangedFields.isArray()).isTrue();
 
     JsonNode changedNameField = serializedChangedFields.get(0);
-    assertThat(changedNameField.get("field").textValue()).isEqualTo("name");
-    assertThat(changedNameField.get("current").textValue()).isEqualTo("Macro");
-    assertThat(changedNameField.get("previous").textValue()).isEqualTo("Micro");
+    assertThat(changedNameField.get("op").textValue()).isEqualTo("REPLACE");
+    assertThat(changedNameField.get("path").textValue()).isEqualTo("/name");
+    assertThat(changedNameField.get("value").textValue()).isEqualTo("0");
+  }
 
-    JsonNode changedOwnerField = serializedChangedFields.get(1);
-    assertThat(changedOwnerField.get("field").textValue()).isEqualTo("owner");
-    assertThat(changedOwnerField.get("current").textValue()).isEqualTo("User");
-    assertThat(changedOwnerField.get("previous").textValue()).isEqualTo("Lambda");
+  @Test
+  public void shouldSerializeArraysInChangedValueFieldProperly() throws JsonProcessingException {
+    ArrayNode changed = objectMapper.createArrayNode();
+    changed.add(objectMapper.createObjectNode()
+            .put("op", "REPLACE")
+            .put("path", "/name")
+            .put("value", "[\"a\", \"b\", \"c\"]"));
+    Changeset changeset = new Changeset("randomId", 1L, changed);
+
+    JsonNode serializedChangedFields = objectMapper.valueToTree(changeset).get("fields");
+    JsonNode changedNameField = serializedChangedFields.get(0);
+    assertThat(changedNameField.get("value").textValue()).isEqualTo("[\"a\", \"b\", \"c\"]");
+  }
+
+  @Test
+  public void shouldSerializeNestedStructuresInChangedValueFieldProperly() throws JsonProcessingException {
+    ArrayNode changed = objectMapper.createArrayNode();
+    changed.add(objectMapper.createObjectNode()
+            .put("op", "REPLACE")
+            .put("path", "/name")
+            .put("value", "{ \"test\" : { \"myarray\": [\"a\", \"b\", \"c\"] } }"));
+    Changeset changeset = new Changeset("randomId", 1L, changed);
+
+    JsonNode serializedChangedFields = objectMapper.valueToTree(changeset).get("fields");
+    JsonNode changedNameField = serializedChangedFields.get(0);
+    assertThat(changedNameField.get("value").textValue()).isEqualTo("{ \"test\" : { \"myarray\": [\"a\", \"b\", \"c\"] } }");
   }
 }

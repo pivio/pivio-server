@@ -12,9 +12,9 @@ public class JsonMapperConfiguration {
 
   @Bean
   public ObjectMapper objectMapper() {
+    ObjectMapper objectMapper = new ObjectMapper();
     SimpleModule changesetModule = new SimpleModule("Changeset Module");
     changesetModule.addSerializer(Changeset.class, new ChangesetJsonSerializer());
-    ObjectMapper objectMapper = new ObjectMapper();
     objectMapper.registerModule(changesetModule);
     return objectMapper;
   }

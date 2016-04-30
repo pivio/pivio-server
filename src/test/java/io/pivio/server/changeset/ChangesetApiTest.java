@@ -12,7 +12,6 @@ import net.minidev.json.JSONArray;
 import org.elasticsearch.client.Client;
 import org.joda.time.DateTime;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,7 +25,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -38,6 +36,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringApplicationConfiguration(AppLauncher.class)
 @WebIntegrationTest(randomPort = true)
 public class ChangesetApiTest {
+
+  private static final String ADD_OPERATION = "add";
+  private static final String REPLACE_OPERATION = "replace";
 
   @Value("${local.server.port}")
   private int port;
@@ -82,8 +83,8 @@ public class ChangesetApiTest {
     List<JsonNode> changesets = retrieveChangesets("randomId");
     JsonNode changedFields = changesets.get(0).get("fields");
 
-    assertThat(changedFields.findValues("field").stream().map(JsonNode::textValue))
-        .containsOnly("id", "type", "serviceName", "name", "description", "owner");
+    assertThat(changedFields.findValues("path").stream().map(JsonNode::textValue))
+        .containsOnly("/id", "/type", "/serviceName", "/name", "/description", "/owner");
   }
 
   @Test
@@ -93,12 +94,12 @@ public class ChangesetApiTest {
     List<JsonNode> changesets = retrieveChangesets("randomId");
     JsonNode firstChangeset = changesets.get(0);
 
-    assertThatFieldHasCorrectDiff(firstChangeset, "id", "", "randomId");
-    assertThatFieldHasCorrectDiff(firstChangeset, "type", "", "service");
-    assertThatFieldHasCorrectDiff(firstChangeset, "name", "", "MicroService");
-    assertThatFieldHasCorrectDiff(firstChangeset, "serviceName", "", "MS");
-    assertThatFieldHasCorrectDiff(firstChangeset, "description", "", "Super service...");
-    assertThatFieldHasCorrectDiff(firstChangeset, "owner", "", "Awesome Team");
+    assertThatFieldHasCorrectDiff(firstChangeset, "/id", "randomId", ADD_OPERATION);
+    assertThatFieldHasCorrectDiff(firstChangeset, "/type", "service", ADD_OPERATION);
+    assertThatFieldHasCorrectDiff(firstChangeset, "/name", "MicroService", ADD_OPERATION);
+    assertThatFieldHasCorrectDiff(firstChangeset, "/serviceName", "MS", ADD_OPERATION);
+    assertThatFieldHasCorrectDiff(firstChangeset, "/description", "Super service...", ADD_OPERATION);
+    assertThatFieldHasCorrectDiff(firstChangeset, "/owner", "Awesome Team", ADD_OPERATION);
   }
 
   @Test
@@ -109,17 +110,9 @@ public class ChangesetApiTest {
     List<JsonNode> changesets = retrieveChangesets("randomId");
     JsonNode firstChangeset = changesets.get(0);
 
-    assertThatFieldHasCorrectDiff(firstChangeset, "provides", "[\"aaa\",\"bbb\",\"ccc\"]", "[\"aaa\",\"d\"]");
-  }
-
-  @Test
-  @Ignore
-  public void noChangesetWhenOnlyOrderOfValuesInArraysChange() {
-    addDocument(document.set("provides", mapper.createArrayNode().add("aaa").add("bbb").add("ccc")));
-    addDocument(document.set("provides", mapper.createArrayNode().add("bbb").add("ccc").add("aaa")));
-
-    List<JsonNode> changesets = retrieveChangesets("randomId");
-    assertThat(changesets).hasSize(1);
+    assertThatFieldHasCorrectDiff(firstChangeset, "/provides/1", "d", REPLACE_OPERATION);
+    List<String> jsonOperationValue = JsonPath.read(firstChangeset.toString(), "$.fields[?(@.path == '/provides/2')].op");
+    assertThat(jsonOperationValue.get(0)).isEqualTo("remove");
   }
 
   @Test
@@ -132,17 +125,7 @@ public class ChangesetApiTest {
     List<JsonNode> changesets = retrieveChangesets("randomId");
     JsonNode firstChangeset = changesets.get(0);
 
-    assertThatFieldHasCorrectDiff(firstChangeset, "dependencies", "{\"name\":\"de.websitename:file.jar\"}", "{\"name\":\"file.jar\"}");
-  }
-
-  @Test
-  @Ignore
-  public void noChangesetWhenOnlyOrderOfFieldsChangesInNestedObject() {
-    addDocument(document.set("dependencies", mapper.createObjectNode().put("name", "file.jar").put("other", "someValue")));
-    addDocument(document.set("dependencies", mapper.createObjectNode().put("other", "someValue").put("name", "file.jar")));
-
-    List<JsonNode> changesets = retrieveChangesets("randomId");
-    assertThat(changesets).hasSize(1);
+    assertThatFieldHasCorrectDiff(firstChangeset, "/dependencies/name", "file.jar", REPLACE_OPERATION);
   }
 
   @Test
@@ -183,8 +166,8 @@ public class ChangesetApiTest {
     JSONArray changedFields = JsonPath.read(changeset.get(0), "$.fields");
     assertThat(changedFields).hasSize(2);
 
-    assertThatFieldHasCorrectDiff(changeset.get(0), "name", "MicroService", "NewService");
-    assertThatFieldHasCorrectDiff(changeset.get(0), "owner", "Awesome Team", "User Team");
+    assertThatFieldHasCorrectDiff(changeset.get(0), "/name", "NewService", REPLACE_OPERATION);
+    assertThatFieldHasCorrectDiff(changeset.get(0), "/owner", "User Team", REPLACE_OPERATION);
   }
 
   @Test
@@ -345,23 +328,23 @@ public class ChangesetApiTest {
   }
 
   private Changeset createChangesetDaysAgo(String document, long order, int daysAgo) {
-    Changeset changeset = new Changeset(document, order, new HashMap<>());
+    Changeset changeset = new Changeset(document, order, mapper.createArrayNode());
     changeset.setTimestamp(DateTime.now().minusDays(daysAgo));
     return changeset;
   }
 
-  private void assertThatFieldHasCorrectDiff(JsonNode changeset, String fieldKey, String previous, String current) {
-    List<String> jsonPreviousValue = JsonPath.read(changeset.toString(), "$.fields[?(@.field == '" + fieldKey + "')].previous");
-    assertThat(jsonPreviousValue.get(0)).isEqualTo(previous);
-    List<String> jsonCurrentValue = JsonPath.read(changeset.toString(), "$.fields[?(@.field == '" + fieldKey + "')].current");
-    assertThat(jsonCurrentValue.get(0)).isEqualTo(current);
+  private void assertThatFieldHasCorrectDiff(JsonNode changeset, String fieldKey, String value, String operation) {
+    List<String> jsonPreviousValue = JsonPath.read(changeset.toString(), "$.fields[?(@.path == '" + fieldKey + "')].value");
+    assertThat(jsonPreviousValue.get(0)).isEqualTo(value);
+    List<String> jsonOperationValue = JsonPath.read(changeset.toString(), "$.fields[?(@.path == '" + fieldKey + "')].op");
+    assertThat(jsonOperationValue.get(0)).isEqualTo(operation);
   }
 
-  private void assertThatFieldHasCorrectDiff(Object changeset, String fieldKey, String previous, String current) {
-    List<String> jsonPreviousValue = JsonPath.read(changeset, "$.fields[?(@.field == '" + fieldKey + "')].previous");
-    assertThat(jsonPreviousValue.get(0)).isEqualTo(previous);
-    List<String> jsonCurrentValue = JsonPath.read(changeset, "$.fields[?(@.field == '" + fieldKey + "')].current");
-    assertThat(jsonCurrentValue.get(0)).isEqualTo(current);
+  private void assertThatFieldHasCorrectDiff(Object changeset, String fieldKey, String value, String operation) {
+    List<String> jsonPreviousValue = JsonPath.read(changeset, "$.fields[?(@.path == '" + fieldKey + "')].value");
+    assertThat(jsonPreviousValue.get(0)).isEqualTo(value);
+    List<String> jsonOperationValue = JsonPath.read(changeset, "$.fields[?(@.path == '" + fieldKey + "')].op");
+    assertThat(jsonOperationValue.get(0)).isEqualTo(operation);
   }
 
   private void addDocument(JsonNode document) {

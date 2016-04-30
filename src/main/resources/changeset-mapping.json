@@ -14,13 +14,14 @@
         "type": "nested",
         "include_in_parent": true,
         "properties": {
-          "field": {
+          "path": {
+            "type": "string",
+            "analyzer": "simple"
+          },
+          "value": {
             "type": "string"
           },
-          "previous": {
-            "type": "string"
-          },
-          "current": {
+          "op": {
             "type": "string"
           }
         }

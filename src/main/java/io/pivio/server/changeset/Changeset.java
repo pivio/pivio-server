@@ -1,11 +1,9 @@
 package io.pivio.server.changeset;
 
-import org.apache.commons.lang3.tuple.Pair;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import org.joda.time.DateTime;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Mapping;
-
-import java.util.Map;
 
 @Document(indexName = "changeset", type = "changeset")
 @Mapping(mappingPath = "changeset-mapping.json")
@@ -14,12 +12,12 @@ public class Changeset {
   private String document;
   private long order;
   private DateTime timestamp;
-  private Map<String, Pair<String, String>> changed;
+  private ArrayNode fields;
 
-  public Changeset(String document, long order, Map<String, Pair<String, String>> changed) {
+  public Changeset(String document, long order, ArrayNode fields) {
     this.document = document;
     this.order = order;
-    this.changed = changed;
+    this.fields = fields;
     timestamp = DateTime.now();
   }
 
@@ -35,6 +33,10 @@ public class Changeset {
     return timestamp;
   }
 
+  public ArrayNode getFields() {
+    return fields;
+  }
+
   /**
    * For testing purpose.
    */
@@ -42,15 +44,11 @@ public class Changeset {
     this.timestamp = timestamp;
   }
 
-  public Map<String, Pair<String, String>> getChanged() {
-    return changed;
-  }
-
   public boolean isEmpty() {
-    return changed.isEmpty();
+    return fields.isMissingNode() || fields.size() == 0;
   }
 
   public boolean isNotEmpty() {
-    return !changed.isEmpty();
+    return !isEmpty();
   }
 }

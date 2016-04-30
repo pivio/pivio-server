@@ -2,8 +2,8 @@ package io.pivio.server.changeset;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.lang3.tuple.Pair;
-import org.elasticsearch.ElasticsearchException;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.flipkart.zjsonpatch.JsonDiff;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
@@ -14,10 +14,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 @Component
@@ -33,79 +32,55 @@ public class ChangesetService {
     this.mapper = mapper;
 
     excludedFields = new HashSet<>();
-    excludedFields.add("created");
-    excludedFields.add("lastUpload");
-    excludedFields.add("lastUpdate");
+    excludedFields.add("/created");
+    excludedFields.add("/lastUpload");
+    excludedFields.add("/lastUpdate");
   }
 
-  public Changeset computeNext(JsonNode pivioDocument) throws IOException {
-    final String pivioDocumentId = pivioDocument.get("id").asText();
-    GetResponse persistentPivioDocument = client.prepareGet("steckbrief", "steckbrief", pivioDocumentId)
-        .execute()
-        .actionGet();
+  public Changeset computeNext(JsonNode document) throws IOException {
+    final String documentId = document.get("id").asText();
+    final Optional<JsonNode> persistentDocument = getDocument(documentId);
+    final JsonNode patch = JsonDiff.asJson(persistentDocument.orElse(mapper.createObjectNode()), document);
+    return new Changeset(documentId, retrieveLastOrderNumber(documentId) + 1L, filterExcludedFields(patch));
+  }
 
-    Map<String, Pair<String, String>> changed = new HashMap<>();
-    if (!persistentPivioDocument.isExists()) {
-
-      Iterator<Map.Entry<String, JsonNode>> fields = pivioDocument.fields();
-      while (fields.hasNext()) {
-        Map.Entry<String, JsonNode> changedField = fields.next();
-        changed.put(changedField.getKey(), Pair.of("", changedField.getValue().textValue()));
+  private ArrayNode filterExcludedFields(JsonNode json) {
+    ArrayNode filteredJson = mapper.createArrayNode();
+    Iterator<JsonNode> elements = json.elements();
+    while (elements.hasNext()) {
+      JsonNode current = elements.next();
+      if (current.has("path") && !excludedFields.contains(current.get("path").textValue())) {
+        filteredJson.add(current);
       }
-      return new Changeset(pivioDocumentId, 1L, changed);
-
-    } else {
-      JsonNode oldPivioDocument = mapper.readTree(persistentPivioDocument.getSourceAsString());
-      Iterator<Map.Entry<String, JsonNode>> oldPivioDocumentFields = oldPivioDocument.fields();
-      while (oldPivioDocumentFields.hasNext()) {
-        Map.Entry<String, JsonNode> oldField = oldPivioDocumentFields.next();
-        if (excludedFields.contains(oldField.getKey())) {
-          continue;
-        }
-        if (!pivioDocument.has(oldField.getKey())) {
-          changed.put(oldField.getKey(), Pair.of(oldField.getValue().textValue(), ""));
-        }
-      }
-
-      Iterator<Map.Entry<String, JsonNode>> fields = pivioDocument.fields();
-      while (fields.hasNext()) {
-        Map.Entry<String, JsonNode> field = fields.next();
-        if (excludedFields.contains(field.getKey())) {
-          continue;
-        }
-
-        if (!oldPivioDocument.has(field.getKey())) {
-          changed.put(field.getKey(), Pair.of("", field.getValue().textValue()));
-        } else if (!oldPivioDocument.get(field.getKey()).toString().equals(field.getValue().toString())) {
-          if (field.getValue().isObject() || field.getValue().isArray()) {
-            changed.put(field.getKey(), Pair.of(oldPivioDocument.get(field.getKey()).toString(), field.getValue().toString()));
-          } else {
-            changed.put(field.getKey(), Pair.of(oldPivioDocument.get(field.getKey()).textValue(), field.getValue().textValue()));
-          }
-        }
-      }
-
-      return new Changeset(pivioDocumentId, retrieveLastOrderNumber(pivioDocumentId) + 1L, changed);
     }
+    return filteredJson;
   }
 
   private long retrieveLastOrderNumber(String documentId) throws IOException {
-    try {
-      SearchResponse lastChangesetResponse = client.prepareSearch("changeset").setTypes("changeset")
-          .setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
-          .setQuery(QueryBuilders.matchQuery("document", documentId))
-          .addSort("order", SortOrder.DESC)
-          .execute()
-          .actionGet();
+    Optional<JsonNode> lastChangeset = getLastChangeset(documentId);
+    return lastChangeset.map(c -> c.get("order").longValue()).orElse(0L);
+  }
 
-      if (lastChangesetResponse.getHits().getTotalHits() == 0) {
-        return 0L;
-      }
+  private Optional<JsonNode> getDocument(String id) throws IOException {
+    GetResponse response = client.prepareGet("steckbrief", "steckbrief", id).execute().actionGet();
+    if (response.isExists()) {
+      return Optional.of(mapper.readTree(response.getSourceAsString()));
+    } else {
+      return Optional.empty();
+    }
+  }
 
-      JsonNode lastChangeset = mapper.readTree(lastChangesetResponse.getHits().getAt(0).getSourceAsString());
-      return lastChangeset.get("order").longValue();
-    } catch (ElasticsearchException e) {
-      return 0L;
+  private Optional<JsonNode> getLastChangeset(String documentId) throws IOException {
+    SearchResponse searchResponse = client.prepareSearch("changeset").setTypes("changeset")
+        .setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
+        .setQuery(QueryBuilders.matchQuery("document", documentId))
+        .addSort("order", SortOrder.DESC)
+        .execute()
+        .actionGet();
+    if (searchResponse.getHits().getTotalHits() > 0) {
+      return Optional.of(mapper.readTree(searchResponse.getHits().getAt(0).getSourceAsString()));
+    } else {
+      return Optional.empty();
     }
   }
 }
