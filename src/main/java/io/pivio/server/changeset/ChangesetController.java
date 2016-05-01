@@ -1,6 +1,5 @@
 package io.pivio.server.changeset;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import io.pivio.server.ElasticsearchQueryHelper;
 import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.client.Client;
@@ -13,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,7 +20,6 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 @CrossOrigin
@@ -39,45 +38,42 @@ public class ChangesetController {
     }
 
     @RequestMapping(value = "/changeset", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public JsonNode listAll(@RequestParam(required = false) String since, HttpServletResponse response) throws IOException {
+    public ResponseEntity listAll(@RequestParam(required = false) String since) throws IOException {
         if (!isSinceParameterValid(since)) {
             LOG.info("Received changeset request with invalid since parameter in {} for all documents", since);
-            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            return null;
+            return ResponseEntity.badRequest().build();
         }
 
         LOG.debug("Retrieving changesets for all documents", since);
-        return queryHelper.retrieveAllDocuments(client.prepareSearch("changeset")
+        return ResponseEntity.ok(queryHelper.retrieveAllDocuments(client.prepareSearch("changeset")
                 .setTypes("changeset")
                 .setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
                 .addSort("timestamp", SortOrder.DESC)
                 .setScroll(new TimeValue(60000))
                 .setQuery(createQuery(since))
-                .setSize(100));
+                .setSize(100)));
     }
 
     @RequestMapping(value = "/document/{id}/changeset", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public JsonNode get(@PathVariable String id, @RequestParam(required = false) String since, HttpServletResponse response) throws IOException {
+    public ResponseEntity get(@PathVariable String id, @RequestParam(required = false) String since) throws IOException {
         if (!queryHelper.isDocumentPresent("steckbrief", "steckbrief", id)) {
             LOG.info("Client wants to retrieve changesets for missing document with id {}", id);
-            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-            return null;
+            return ResponseEntity.notFound().build();
         }
 
         if (!isSinceParameterValid(since)) {
             LOG.info("Received changeset request with invalid since parameter in {} for document {}", since, id);
-            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            return null;
+            return ResponseEntity.badRequest().build();
         }
 
         LOG.debug("Retrieving changesets for document {} with since parameter {}", id, since);
-        return queryHelper.retrieveAllDocuments(client.prepareSearch("changeset")
+        return ResponseEntity.ok(queryHelper.retrieveAllDocuments(client.prepareSearch("changeset")
                 .setTypes("changeset")
                 .setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
                 .addSort("timestamp", SortOrder.DESC)
                 .setScroll(new TimeValue(60000))
                 .setQuery(createQuery(id, since))
-                .setSize(100));
+                .setSize(100)));
     }
 
     private boolean isSinceParameterValid(String since) {

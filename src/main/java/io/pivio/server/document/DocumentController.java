@@ -22,8 +22,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.util.UriComponentsBuilder;
 
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -50,13 +50,13 @@ public class DocumentController {
     }
 
     @RequestMapping(method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public JsonNode create(@RequestBody ObjectNode document, HttpServletResponse response) throws IOException {
+    public ResponseEntity create(@RequestBody ObjectNode document, UriComponentsBuilder uriBuilder) throws IOException {
         if (isIdMissingOrEmpty(document)) {
-            return missingIdError(document, response);
+            return ResponseEntity.badRequest().body(missingIdError(document));
         }
 
         if (isMandatoryFieldMissingOrEmpty(document)) {
-            return missingMandatoryField(document, response);
+            return ResponseEntity.badRequest().body(missingMandatoryField(document));
         }
 
         final Changeset changeset = changesetService.computeNext(document);
@@ -95,12 +95,10 @@ public class DocumentController {
         }
 
         LOG.info("Indexed document {} for {}", documentId, document.get("name").asText());
-        response.setStatus(HttpServletResponse.SC_CREATED);
-        return null;
+        return ResponseEntity.created(uriBuilder.path("/document/{documentId}").buildAndExpand(documentId).toUri()).build();
     }
 
-    private JsonNode missingMandatoryField(@RequestBody ObjectNode document, HttpServletResponse response) {
-        response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+    private JsonNode missingMandatoryField(JsonNode document) {
         ObjectNode error = mapper.createObjectNode();
         String missingMandatoryField = getMissingMandatoryField(document);
         if (missingMandatoryField != null) {
@@ -113,15 +111,14 @@ public class DocumentController {
         return error;
     }
 
-    private JsonNode missingIdError(@RequestBody ObjectNode document, HttpServletResponse response) {
+    private JsonNode missingIdError(JsonNode document) {
         LOG.info("Received document without or with empty id field in {}", document.toString());
-        response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
         ObjectNode newId = mapper.createObjectNode();
         newId.put("id", UUID.randomUUID().toString());
         return newId;
     }
 
-    private boolean isIdMissingOrEmpty(@RequestBody ObjectNode document) {
+    private boolean isIdMissingOrEmpty(JsonNode document) {
         return document.get("id") == null || StringUtils.isEmpty(document.get("id").asText(""));
     }
 
@@ -152,17 +149,16 @@ public class DocumentController {
     }
 
     @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public JsonNode get(@PathVariable String id, HttpServletResponse response) throws IOException {
+    public ResponseEntity get(@PathVariable String id) throws IOException {
         GetResponse getResponse = client.prepareGet("steckbrief", "steckbrief", id)
                 .execute()
                 .actionGet();
 
         if (!getResponse.isExists()) {
-            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-            return null;
+            return ResponseEntity.notFound().build();
         }
 
-        return mapper.readTree(getResponse.getSourceAsString());
+        return ResponseEntity.ok(mapper.readTree(getResponse.getSourceAsString()));
     }
 
     @RequestMapping(value = "/{id}", method = RequestMethod.DELETE)

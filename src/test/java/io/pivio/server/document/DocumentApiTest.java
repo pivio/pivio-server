@@ -23,6 +23,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import java.net.URI;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -53,6 +54,7 @@ public class DocumentApiTest {
         PivioDocument newPivioDocument = PivioDocument.builder().id("randomId").type("service").name("MicroService").serviceName("MS").description("Super service...").owner("Awesome Team").build();
         ResponseEntity<PivioDocument> responseEntity = restTemplate.postForEntity("http://localhost:" + port + "/document", newPivioDocument, PivioDocument.class);
         assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(responseEntity.getHeaders().getLocation()).isEqualTo(URI.create("http://localhost:" + port + "/document/randomId"));
     }
 
     @Test

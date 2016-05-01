@@ -12,11 +12,10 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-public class FieldFilter {
+class FieldFilter {
 
     @Autowired
     private final ObjectMapper mapper;
-
 
     @Autowired
     public FieldFilter(ObjectMapper mapper) {
