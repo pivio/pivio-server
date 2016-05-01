@@ -170,10 +170,10 @@ public class DocumentController {
                     .execute()
                     .actionGet();
             LOG.info("Deleted document {} successfully", id);
-            return ResponseEntity.status(HttpStatus.ACCEPTED).body(null);
+            return ResponseEntity.noContent().build();
         } else {
             LOG.warn("Could not delete document {}", id);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+            return ResponseEntity.notFound().build();
         }
     }
 }
