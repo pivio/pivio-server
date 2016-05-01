@@ -58,6 +58,20 @@ public class DocumentApiTest {
     }
 
     @Test
+    public void insertDocumentWithBigNumberAsIDShouldNotFail() throws Exception {
+        PivioDocument newPivioDocument = PivioDocument.builder()
+                .id(Integer.MAX_VALUE + "" + Integer.MAX_VALUE + "" + Integer.MAX_VALUE + "" + Integer.MAX_VALUE)
+                .type("service")
+                .name("MicroService")
+                .serviceName("MS")
+                .description("Super service...")
+                .owner("Awesome Team")
+                .build();
+        ResponseEntity<PivioDocument> responseEntity = restTemplate.postForEntity("http://localhost:" + port + "/document", newPivioDocument, PivioDocument.class);
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+    }
+
+    @Test
     public void shouldRejectNewDocumentWithEmptyIdFieldInRequest() throws Exception {
         PivioDocument newPivioDocument = PivioDocument.builder().type("service").name("MicroService").serviceName("MS").description("Super service...").owner("Awesome Team").build();
         ResponseEntity<PivioDocument> responseEntity = restTemplate.postForEntity("http://localhost:" + port + "/document", newPivioDocument, PivioDocument.class);
