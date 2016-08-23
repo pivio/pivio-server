@@ -2,6 +2,7 @@ package io.pivio.server.document;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.pivio.server.changeset.Changeset;
 import io.pivio.server.changeset.ChangesetService;
@@ -12,20 +13,15 @@ import org.joda.time.format.ISODateTimeFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 
@@ -40,6 +36,9 @@ public class DocumentController {
     private final ChangesetService changesetService;
     private final ObjectMapper mapper;
     private final List<String> mandatoryFields;
+
+    @Autowired
+    public ObjectMapper objectMapper;
 
     @Autowired
     public DocumentController(Client client, ChangesetService changesetService, ObjectMapper mapper) {
@@ -58,6 +57,9 @@ public class DocumentController {
         if (isMandatoryFieldMissingOrEmpty(document)) {
             return ResponseEntity.badRequest().body(missingMandatoryField(document));
         }
+
+        removeNullNodes(document);
+
 
         final Changeset changeset = changesetService.computeNext(document);
         final String documentId = document.get("id").asText();
@@ -96,6 +98,24 @@ public class DocumentController {
 
         LOG.info("Indexed document {} for {}", documentId, document.get("name").asText());
         return ResponseEntity.created(uriBuilder.path("/document/{documentId}").buildAndExpand(documentId).toUri()).build();
+    }
+
+    private JsonNode removeNullNodes(JsonNode node) {
+        Iterator<JsonNode> iterator = node.iterator();
+        while (iterator.hasNext()) {
+            JsonNode next = iterator.next();
+            if (next.getNodeType().equals(JsonNodeType.NULL)) {
+                iterator.remove();
+            }
+            if (next.getNodeType().equals(JsonNodeType.ARRAY) || next.getNodeType().equals(JsonNodeType.OBJECT)) {
+                JsonNode jsonNode = removeNullNodes(next);
+                System.out.println("!");
+                if (!jsonNode.iterator().hasNext()) {
+                    iterator.remove();
+                }
+            }
+        }
+        return node;
     }
 
     private JsonNode missingMandatoryField(JsonNode document) {
