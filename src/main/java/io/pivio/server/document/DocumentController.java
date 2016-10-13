@@ -109,7 +109,6 @@ public class DocumentController {
             }
             if (next.getNodeType().equals(JsonNodeType.ARRAY) || next.getNodeType().equals(JsonNodeType.OBJECT)) {
                 JsonNode jsonNode = removeNullNodes(next);
-                System.out.println("!");
                 if (!jsonNode.iterator().hasNext()) {
                     iterator.remove();
                 }
