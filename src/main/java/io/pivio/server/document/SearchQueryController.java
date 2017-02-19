@@ -16,6 +16,7 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.actuate.metrics.CounterService;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -40,12 +41,14 @@ public class SearchQueryController {
     private final Client client;
     private final ObjectMapper mapper;
     private final FieldFilter fieldFilter;
+    private CounterService counterService;
 
     @Autowired
-    public SearchQueryController(Client client, ObjectMapper mapper, FieldFilter fieldFilter) {
+    public SearchQueryController(Client client, ObjectMapper mapper, FieldFilter fieldFilter, CounterService counterService) {
         this.client = client;
         this.mapper = mapper;
         this.fieldFilter = fieldFilter;
+        this.counterService = counterService;
     }
 
     @RequestMapping(value = "/document", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -54,6 +57,7 @@ public class SearchQueryController {
                            @RequestParam(required = false) String sort,
                            HttpServletResponse response) throws IOException {
 
+        counterService.increment("counter.calls.document.get");
         if (!isRequestValid(fields, sort)) {
             LOG.info("Received search query with invalid parameters, fields: {}, sort: {}", fields, sort);
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);

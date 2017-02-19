@@ -11,6 +11,7 @@ import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.actuate.metrics.CounterService;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -30,15 +31,18 @@ public class ChangesetController {
 
     private final Client client;
     private final ElasticsearchQueryHelper queryHelper;
+    private final CounterService counterService;
 
     @Autowired
-    public ChangesetController(Client client, ElasticsearchQueryHelper queryHelper) {
+    public ChangesetController(Client client, ElasticsearchQueryHelper queryHelper, CounterService counterService) {
         this.client = client;
         this.queryHelper = queryHelper;
+        this.counterService = counterService;
     }
 
     @RequestMapping(value = "/changeset", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity listAll(@RequestParam(required = false) String since) throws IOException {
+        counterService.increment("counter.calls.changeset.get");
         if (!isSinceParameterValid(since)) {
             LOG.info("Received changeset request with invalid since parameter in {} for all documents", since);
             return ResponseEntity.badRequest().build();
@@ -56,6 +60,8 @@ public class ChangesetController {
 
     @RequestMapping(value = "/document/{id}/changeset", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity get(@PathVariable String id, @RequestParam(required = false) String since) throws IOException {
+        counterService.increment("counter.calls.document.id.changeset.get");
+
         if (!queryHelper.isDocumentPresent("steckbrief", "steckbrief", id)) {
             LOG.info("Client wants to retrieve changesets for missing document with id {}", id);
             return ResponseEntity.notFound().build();

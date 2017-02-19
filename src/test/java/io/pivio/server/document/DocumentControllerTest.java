@@ -8,6 +8,7 @@ import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.client.Client;
 import org.junit.Before;
 import org.junit.Test;
+import org.springframework.boot.actuate.metrics.CounterService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -20,12 +21,14 @@ public class DocumentControllerTest {
     private Client client = null;
     DocumentController documentController;
     ObjectMapper objectMapper;
+    CounterService counterService;
 
     @Before
     public void setUp() {
         client = mock(Client.class);
+        counterService = mock(CounterService.class);
         objectMapper = new ObjectMapper();
-        documentController = new DocumentController(client, new ChangesetService(client, objectMapper), objectMapper);
+        documentController = new DocumentController(client, new ChangesetService(client, objectMapper), objectMapper, counterService);
     }
 
     @Test
