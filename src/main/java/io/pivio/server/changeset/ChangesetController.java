@@ -14,12 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.metrics.CounterService;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 
@@ -40,7 +35,7 @@ public class ChangesetController {
         this.counterService = counterService;
     }
 
-    @RequestMapping(value = "/changeset", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "/changeset", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity listAll(@RequestParam(required = false) String since) throws IOException {
         counterService.increment("counter.calls.changeset.get");
         if (!isSinceParameterValid(since)) {
@@ -58,7 +53,7 @@ public class ChangesetController {
                 .setSize(100)));
     }
 
-    @RequestMapping(value = "/document/{id}/changeset", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "/document/{id}/changeset", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity get(@PathVariable String id, @RequestParam(required = false) String since) throws IOException {
         counterService.increment("counter.calls.document.id.changeset.get");
 

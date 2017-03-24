@@ -18,11 +18,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.metrics.CounterService;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -51,7 +47,7 @@ public class SearchQueryController {
         this.counterService = counterService;
     }
 
-    @RequestMapping(value = "/document", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "/document", produces = MediaType.APPLICATION_JSON_VALUE)
     public JsonNode search(@RequestParam(required = false) String query,
                            @RequestParam(required = false) String fields,
                            @RequestParam(required = false) String sort,

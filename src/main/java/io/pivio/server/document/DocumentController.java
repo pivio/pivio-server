@@ -8,7 +8,6 @@ import io.pivio.server.changeset.Changeset;
 import io.pivio.server.changeset.ChangesetService;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.Client;
-import org.elasticsearch.index.query.QueryBuilders;
 import org.joda.time.format.ISODateTimeFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,7 +51,7 @@ public class DocumentController {
         mandatoryFields = Arrays.asList("id", "type", "name", "owner", "description");
     }
 
-    @RequestMapping(method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity create(@RequestBody ObjectNode document, UriComponentsBuilder uriBuilder) throws IOException {
         counterService.increment("counter.calls.document.post");
         if (isIdMissingOrEmpty(document)) {
@@ -172,7 +171,7 @@ public class DocumentController {
         return null;
     }
 
-    @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity get(@PathVariable String id) throws IOException {
         GetResponse getResponse = client.prepareGet("steckbrief", "steckbrief", id)
                 .execute()
@@ -185,7 +184,7 @@ public class DocumentController {
         return ResponseEntity.ok(mapper.readTree(getResponse.getSourceAsString()));
     }
 
-    @RequestMapping(value = "/{id}", method = RequestMethod.DELETE)
+    @DeleteMapping(value = "/{id}")
     public ResponseEntity delete(@PathVariable String id) throws IOException {
         /*
         LOG.info("Try to delete document {}", id);
