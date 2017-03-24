@@ -35,7 +35,9 @@ public class DocumentApiTest {
     private ElasticsearchTemplate elasticsearchTemplate;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final TestRestTemplate restTemplate = new TestRestTemplate();
+
+    @Autowired
+    private TestRestTemplate restTemplate;
 
     @Before
     public void cleanData() {

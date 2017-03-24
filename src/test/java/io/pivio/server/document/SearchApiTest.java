@@ -42,7 +42,8 @@ public class SearchApiTest {
     @Autowired
     private ElasticsearchTemplate elasticsearchTemplate;
 
-    private final TestRestTemplate restTemplate = new TestRestTemplate();
+    @Autowired
+    private TestRestTemplate restTemplate;
 
     private ObjectMapper objectMapper;
     private ObjectNode teamLambdaQuery;

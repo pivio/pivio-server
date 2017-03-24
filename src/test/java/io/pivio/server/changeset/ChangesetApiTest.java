@@ -50,7 +50,8 @@ public class ChangesetApiTest {
     @Autowired
     private ObjectMapper mapper;
 
-    private final TestRestTemplate restTemplate = new TestRestTemplate();
+    @Autowired
+    private TestRestTemplate restTemplate;
 
     private ObjectNode document;
 
