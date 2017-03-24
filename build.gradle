@@ -71,7 +71,7 @@ dependencies {
     compile('com.flipkart.zjsonpatch:zjsonpatch:0.2.1')
     testCompile('org.springframework.boot:spring-boot-starter-test')
     testCompile('org.assertj:assertj-core:3.3.0')
-    testCompile('com.jayway.jsonpath:json-path:2.1.0')
+    testCompile('com.jayway.jsonpath:json-path')
 }
 
 task wrapper(type: Wrapper) {
