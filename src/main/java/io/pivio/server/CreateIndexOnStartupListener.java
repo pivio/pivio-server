@@ -27,11 +27,11 @@ public class CreateIndexOnStartupListener implements ApplicationListener<Context
         log.info("Creating index for documents");
         elasticsearchTemplate.createIndex(PivioDocument.class);
         elasticsearchTemplate.putMapping(PivioDocument.class);
-        elasticsearchTemplate.refresh(PivioDocument.class, true);
+        elasticsearchTemplate.refresh(PivioDocument.class);
 
         log.info("Creating index for changesets");
         elasticsearchTemplate.createIndex(Changeset.class);
         elasticsearchTemplate.putMapping(Changeset.class);
-        elasticsearchTemplate.refresh(Changeset.class, true);
+        elasticsearchTemplate.refresh(Changeset.class);
     }
 }

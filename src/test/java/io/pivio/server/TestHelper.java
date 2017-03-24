@@ -16,7 +16,7 @@ public final class TestHelper {
         elasticsearchTemplate.createIndex(Changeset.class);
         elasticsearchTemplate.putMapping(Changeset.class);
 
-        elasticsearchTemplate.refresh(PivioDocument.class, true);
-        elasticsearchTemplate.refresh(Changeset.class, true);
+        elasticsearchTemplate.refresh(PivioDocument.class);
+        elasticsearchTemplate.refresh(Changeset.class);
     }
 }

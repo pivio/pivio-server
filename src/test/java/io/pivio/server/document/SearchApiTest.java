@@ -115,7 +115,7 @@ public class SearchApiTest {
                 .put("owner", "arrayTeam")
                 .set("arrayfield", objectMapper.createArrayNode().add("d").add("b").add("e")));
 
-        elasticsearchTemplate.refresh(PivioDocument.class, true);
+        elasticsearchTemplate.refresh(PivioDocument.class);
 
         teamLambdaQuery = objectMapper.createObjectNode();
         ObjectNode match = teamLambdaQuery.putObject("match");

@@ -309,7 +309,7 @@ public class ChangesetApiTest {
                 .setSource(document.toString())
                 .execute()
                 .actionGet();
-        elasticsearchTemplate.refresh(PivioDocument.class, true);
+        elasticsearchTemplate.refresh(PivioDocument.class);
     }
 
     private void persistChangesets(Changeset... changesets) throws JsonProcessingException {
@@ -320,7 +320,7 @@ public class ChangesetApiTest {
                     .execute()
                     .actionGet();
         }
-        elasticsearchTemplate.refresh(Changeset.class, true);
+        elasticsearchTemplate.refresh(Changeset.class);
     }
 
     private Changeset createChangesetDaysAgo(long order, int daysAgo) {
@@ -349,8 +349,8 @@ public class ChangesetApiTest {
 
     private void addDocument(JsonNode document) {
         restTemplate.postForEntity("http://localhost:" + port + "/document", document, JsonNode.class);
-        elasticsearchTemplate.refresh(PivioDocument.class, true);
-        elasticsearchTemplate.refresh(Changeset.class, true);
+        elasticsearchTemplate.refresh(PivioDocument.class);
+        elasticsearchTemplate.refresh(Changeset.class);
     }
 
     private List<JsonNode> retrieveChangesets(String id) {

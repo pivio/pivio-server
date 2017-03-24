@@ -187,6 +187,7 @@ public class DocumentController {
 
     @RequestMapping(value = "/{id}", method = RequestMethod.DELETE)
     public ResponseEntity delete(@PathVariable String id) throws IOException {
+        /*
         LOG.info("Try to delete document {}", id);
         counterService.increment("counter.calls.document.id.delete");
         if (client.prepareDelete("steckbrief", "steckbrief", id).execute().actionGet().isFound()) {
@@ -200,6 +201,7 @@ public class DocumentController {
             LOG.warn("Could not delete document {}", id);
             return ResponseEntity.notFound().build();
         }
-
+         */
+        return null;
     }
 }

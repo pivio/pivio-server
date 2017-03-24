@@ -156,7 +156,7 @@ public class DocumentApiTest {
         String lastUpload = responseEntity.getBody().get("lastUpload").textValue();
         String lastUpdate = responseEntity.getBody().get("lastUpdate").textValue();
 
-        elasticsearchTemplate.refresh(Changeset.class, true);
+        elasticsearchTemplate.refresh(Changeset.class);
         restTemplate.postForEntity("http://localhost:" + port + "/document", newPivioDocument, PivioDocument.class);
         responseEntity = restTemplate.getForEntity("http://localhost:" + port + "/document/randomId", JsonNode.class);
 
@@ -174,7 +174,7 @@ public class DocumentApiTest {
         String lastUpdate = responseEntity.getBody().get("lastUpdate").textValue();
 
         newPivioDocument.setOwner("User Team");
-        elasticsearchTemplate.refresh(Changeset.class, true);
+        elasticsearchTemplate.refresh(Changeset.class);
         restTemplate.postForEntity("http://localhost:" + port + "/document", newPivioDocument, PivioDocument.class);
         responseEntity = restTemplate.getForEntity("http://localhost:" + port + "/document/randomId", JsonNode.class);
 
@@ -189,7 +189,7 @@ public class DocumentApiTest {
 
         restTemplate.postForEntity("http://localhost:" + port + "/document", firstDocument, PivioDocument.class);
         restTemplate.postForEntity("http://localhost:" + port + "/document", secondDocument, PivioDocument.class);
-        elasticsearchTemplate.refresh(PivioDocument.class, true);
+        elasticsearchTemplate.refresh(PivioDocument.class);
 
         ResponseEntity<JsonNode> responseEntity = restTemplate.getForEntity("http://localhost:" + port + "/document", JsonNode.class);
 
