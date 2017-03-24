@@ -4,24 +4,25 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import io.pivio.server.JsonMapperConfiguration;
+import io.pivio.server.AppLauncher;
 import org.joda.time.DateTime;
 import org.joda.time.format.ISODateTimeFormat;
-import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringRunner;
 
 import java.text.ParseException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@RunWith(SpringRunner.class)
+@ContextConfiguration(classes = AppLauncher.class)
 public class ChangesetJsonSerializerTest {
 
+    @Autowired
     private ObjectMapper objectMapper;
-
-    @Before
-    public void setup() {
-        objectMapper = new JsonMapperConfiguration().objectMapper();
-    }
 
     @Test
     public void shouldSerializeDocumentId() throws JsonProcessingException {

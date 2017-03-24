@@ -2,36 +2,36 @@ package io.pivio.server.changeset;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import org.joda.time.format.ISODateTimeFormat;
+import org.springframework.boot.jackson.JsonComponent;
+import org.springframework.boot.jackson.JsonObjectSerializer;
 
 import java.io.IOException;
 import java.util.Iterator;
 
-public class ChangesetJsonSerializer extends JsonSerializer<Changeset> {
+@JsonComponent
+public class ChangesetJsonSerializer extends JsonObjectSerializer<Changeset> {
 
     @Override
-    public void serialize(Changeset changeset, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-        gen.writeStartObject();
-        gen.writeStringField("document", changeset.getDocument());
-        gen.writeNumberField("order", changeset.getOrder());
-        gen.writeStringField("timestamp", ISODateTimeFormat.dateTime().print(changeset.getTimestamp()));
-        gen.writeArrayFieldStart("fields");
+    protected void serializeObject(Changeset changeset, JsonGenerator jgen, SerializerProvider provider) throws IOException {
+        jgen.writeStringField("document", changeset.getDocument());
+        jgen.writeNumberField("order", changeset.getOrder());
+        jgen.writeStringField("timestamp", ISODateTimeFormat.dateTime().print(changeset.getTimestamp()));
+        jgen.writeArrayFieldStart("fields");
         Iterator<JsonNode> patches = changeset.getFields().elements();
         while (patches.hasNext()) {
-            gen.writeStartObject();
+            jgen.writeStartObject();
             JsonNode current = patches.next();
-            gen.writeStringField("op", current.get("op").textValue());
-            gen.writeStringField("path", current.get("path").textValue());
+            jgen.writeStringField("op", current.get("op").textValue());
+            jgen.writeStringField("path", current.get("path").textValue());
             if (current.has("value")) {
-                gen.writeStringField("value",
+                jgen.writeStringField("value",
                         removeLeadingAndTrailingDoubleQuotes(current.get("value").toString()).replace("\\\"", "\""));
             }
-            gen.writeEndObject();
+            jgen.writeEndObject();
         }
-        gen.writeEndArray();
-        gen.writeEndObject();
+        jgen.writeEndArray();
     }
 
     private String removeLeadingAndTrailingDoubleQuotes(String str) {

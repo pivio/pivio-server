@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.pivio.server.AppLauncher;
-import io.pivio.server.JsonMapperConfiguration;
 import io.pivio.server.TestHelper;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -45,14 +44,14 @@ public class SearchApiTest {
     @Autowired
     private TestRestTemplate restTemplate;
 
+    @Autowired
     private ObjectMapper objectMapper;
+
     private ObjectNode teamLambdaQuery;
 
     @Before
     public void initializeTestData() {
         TestHelper.cleanElasticsearch(elasticsearchTemplate);
-
-        objectMapper = new JsonMapperConfiguration().objectMapper();
 
         addDocument(objectMapper.createObjectNode().put("id", "no1")
                 .put("name", "User Service")
