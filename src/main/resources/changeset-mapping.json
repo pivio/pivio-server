@@ -5,7 +5,8 @@
         "type": "string"
       },
       "timestamp": {
-        "type": "date"
+        "type": "date",
+        "format": "dateOptionalTime"
       },
       "order": {
         "type": "long"

@@ -229,7 +229,7 @@ public class DocumentApiTest {
 
     @Test
     public void shouldRespondWithMeaningfulErrorMessageOnEmptyMandatoryField() throws Exception {
-        PivioDocument newDocument = PivioDocument.builder().id("randomId").type("service").serviceName("MS").description("Super service...").owner("Awesome Team").build();
+        PivioDocument newDocument = PivioDocument.builder().id("randomId").type("service").name("").serviceName("MS").description("Super service...").owner("Awesome Team").build();
         ResponseEntity<JsonNode> responseEntity = restTemplate.postForEntity("http://localhost:" + port + "/document", newDocument, JsonNode.class);
         assertThat(responseEntity.getBody().get("error").asText()).isEqualToIgnoringCase("mandatory field 'name' is empty");
     }

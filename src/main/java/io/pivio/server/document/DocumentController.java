@@ -6,8 +6,11 @@ import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.pivio.server.changeset.Changeset;
 import io.pivio.server.changeset.ChangesetService;
+import org.elasticsearch.action.deletebyquery.DeleteByQueryAction;
+import org.elasticsearch.action.deletebyquery.DeleteByQueryRequestBuilder;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.joda.time.format.ISODateTimeFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -186,11 +189,12 @@ public class DocumentController {
 
     @DeleteMapping(value = "/{id}")
     public ResponseEntity delete(@PathVariable String id) throws IOException {
-        /*
         LOG.info("Try to delete document {}", id);
         counterService.increment("counter.calls.document.id.delete");
         if (client.prepareDelete("steckbrief", "steckbrief", id).execute().actionGet().isFound()) {
-            client.prepareDeleteByQuery("changeset").setTypes("changeset")
+            new DeleteByQueryRequestBuilder(client, DeleteByQueryAction.INSTANCE)
+                    .setIndices("changeset")
+                    .setTypes("changeset")
                     .setQuery(QueryBuilders.matchQuery("document", id))
                     .execute()
                     .actionGet();
@@ -200,7 +204,5 @@ public class DocumentController {
             LOG.warn("Could not delete document {}", id);
             return ResponseEntity.notFound().build();
         }
-         */
-        return null;
     }
 }

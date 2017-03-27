@@ -135,13 +135,13 @@ public class SearchApiTest {
     public void onlyReturnsRequestedFieldsOfDocuments() throws IOException {
         ArrayNode searchResult = executeSearch(teamLambdaQuery, "newfield1,newfield2,", "");
         assertThat(searchResult.findValues("id")).extracting(JsonNode::textValue).containsOnly("no1", "no2", "no3");
-        assertThat(searchResult.get(0).fieldNames()).containsOnly("id", "newfield1", "newfield2");
+        assertThat(searchResult.get(2).fieldNames()).containsOnly("id", "newfield1", "newfield2");
     }
 
     @Test
     public void sortResultsDescendingByshort_nameField() throws IOException {
         ArrayNode searchResult = executeSearch(teamLambdaQuery, "newfield1", "short_name:desc");
-        assertThat(searchResult.findValues("id")).extracting(JsonNode::textValue).containsExactly("no1", "no3", "no2");
+        assertThat(searchResult.findValues("id")).extracting(JsonNode::textValue).containsExactly("no1", "no2", "no3");
     }
 
     @Test
@@ -173,10 +173,10 @@ public class SearchApiTest {
     public void queryForNestedObject() throws IOException {
         ObjectNode searchQuery = objectMapper.createObjectNode();
         ObjectNode nested = searchQuery.putObject("nested");
-        nested.put("path", "software_dependencies.licences");
+        nested.put("path", "software_dependencies");
         ObjectNode nestedQuery = nested.putObject("query");
         ObjectNode matchQuery = nestedQuery.putObject("match");
-        matchQuery.put("key", "gpl");
+        matchQuery.put("software_dependencies.licences.key", "gpl");
 
         ArrayNode searchResult = executeSearch(searchQuery, "", "");
         assertThat(searchResult.findValues("id")).extracting(JsonNode::textValue).containsExactly("nestedObject");
@@ -199,7 +199,7 @@ public class SearchApiTest {
         matchQuery.put("arrayfield", "b");
 
         ArrayNode searchResult = executeSearch(searchQuery, "", "");
-        assertThat(searchResult.findValues("id")).extracting(JsonNode::textValue).containsExactly("array", "array2");
+        assertThat(searchResult.findValues("id")).extracting(JsonNode::textValue).containsExactly("array2", "array");
     }
 
     @Test
