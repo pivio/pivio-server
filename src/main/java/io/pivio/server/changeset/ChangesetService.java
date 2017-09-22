@@ -6,11 +6,9 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.flipkart.zjsonpatch.JsonDiff;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.sort.SortOrder;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -26,7 +24,6 @@ public class ChangesetService {
     private final ObjectMapper mapper;
     private final Set<String> excludedFields;
 
-    @Autowired
     public ChangesetService(Client client, ObjectMapper mapper) {
         this.client = client;
         this.mapper = mapper;
@@ -65,21 +62,22 @@ public class ChangesetService {
         GetResponse response = client.prepareGet("steckbrief", "steckbrief", id).execute().actionGet();
         if (response.isExists()) {
             return Optional.of(mapper.readTree(response.getSourceAsString()));
-        } else {
+        }
+        else {
             return Optional.empty();
         }
     }
 
     private Optional<JsonNode> getLastChangeset(String documentId) throws IOException {
         SearchResponse searchResponse = client.prepareSearch("changeset").setTypes("changeset")
-                .setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
                 .setQuery(QueryBuilders.matchQuery("document", documentId))
                 .addSort("order", SortOrder.DESC)
                 .execute()
                 .actionGet();
         if (searchResponse.getHits().getTotalHits() > 0) {
             return Optional.of(mapper.readTree(searchResponse.getHits().getAt(0).getSourceAsString()));
-        } else {
+        }
+        else {
             return Optional.empty();
         }
     }

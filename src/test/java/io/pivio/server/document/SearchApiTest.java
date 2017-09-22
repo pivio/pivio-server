@@ -1,263 +1,329 @@
 package io.pivio.server.document;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.pivio.server.TestHelper;
-import org.apache.commons.lang3.RandomStringUtils;
+import io.pivio.server.AbstractApiTestCase;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.util.EntityUtils;
+import org.apache.commons.text.RandomStringGenerator;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
+import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.junit4.SpringRunner;
 
-import java.io.IOException;
+import java.net.URI;
 import java.net.URLEncoder;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.springframework.http.HttpHeaders.CONTENT_TYPE;
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
-@RunWith(SpringRunner.class)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-public class SearchApiTest {
-
-    @Value("${local.server.port}")
-    private int port;
-
-    @Autowired
-    private ElasticsearchTemplate elasticsearchTemplate;
-
-    @Autowired
-    private TestRestTemplate restTemplate;
-
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    private ObjectNode teamLambdaQuery;
+public class SearchApiTest extends AbstractApiTestCase {
 
     @Before
-    public void initializeTestData() {
-        TestHelper.cleanElasticsearch(elasticsearchTemplate);
+    public void setUpTestData() {
+        RandomStringGenerator randomStringGenerator = new RandomStringGenerator.Builder().build();
 
-        addDocument(objectMapper.createObjectNode().put("id", "no1")
+        postDocument(objectMapper.createObjectNode().put("id", "no1")
                 .put("name", "User Service")
                 .put("short_name", "USS")
                 .put("type", "service")
-                .put("description", RandomStringUtils.random(20))
+                .put("description", randomStringGenerator.generate(20))
                 .put("owner", "lambda")
                 .put("newfield1", "test1"));
-        addDocument(objectMapper.createObjectNode().put("id", "no2")
+
+        postDocument(objectMapper.createObjectNode().put("id", "no2")
                 .put("name", "Micro Service 2")
                 .put("short_name", "MSS 2")
                 .put("type", "service")
-                .put("description", RandomStringUtils.random(20))
+                .put("description", randomStringGenerator.generate(20))
                 .put("owner", "lambda"));
-        addDocument(objectMapper.createObjectNode().put("id", "no3")
+
+        postDocument(objectMapper.createObjectNode().put("id", "no3")
                 .put("name", "Micro Service 3")
                 .put("short_name", "MSS")
                 .put("type", "service")
-                .put("description", RandomStringUtils.random(20))
+                .put("description", randomStringGenerator.generate(20))
                 .put("owner", "lambda")
                 .put("newfield1", "test2")
                 .put("newfield2", "test"));
-        addDocument(objectMapper.createObjectNode().put("id", "no4")
+
+        postDocument(objectMapper.createObjectNode().put("id", "no4")
                 .put("name", "Service 4")
                 .put("short_name", "MSS")
                 .put("type", "service")
-                .put("description", RandomStringUtils.random(20))
+                .put("description", randomStringGenerator.generate(20))
                 .put("owner", "other")
                 .put("newfield1", "test3"));
 
-        addDocument(objectMapper.createObjectNode().put("id", "nestedObject")
+        postDocument(objectMapper.createObjectNode().put("id", "nestedObject")
                 .put("name", "Service 5")
                 .put("short_name", "NOS")
                 .put("type", "service")
-                .put("description", RandomStringUtils.random(20))
+                .put("description", randomStringGenerator.generate(20))
                 .put("owner", "nestedTeam")
                 .set("software_dependencies", objectMapper.createArrayNode()
                         .add(objectMapper.createObjectNode()
                                 .put("name", "de.websitename:file.jar")
-                                .set("licences", objectMapper.createArrayNode()
+                                .set("licenses", objectMapper.createArrayNode()
                                         .add(objectMapper.createObjectNode().put("key", "prop").put("fullName", "Some Proprietary License"))))
-                        .add(objectMapper.createObjectNode().set("licences", objectMapper.createArrayNode()
+                        .add(objectMapper.createObjectNode().set("licenses", objectMapper.createArrayNode()
                                 .add(objectMapper.createObjectNode().put("key", "apl").put("fullName", "Apache Public License"))
                                 .add(objectMapper.createObjectNode().put("key", "gpl").put("fullName", "GNU Public License"))))));
 
-        addDocument(objectMapper.createObjectNode().put("id", "array")
+        postDocument(objectMapper.createObjectNode().put("id", "array")
                 .put("name", "Service Array")
                 .put("short_name", "ARR")
                 .put("type", "service")
-                .put("description", RandomStringUtils.random(20))
+                .put("description", randomStringGenerator.generate(20))
                 .put("owner", "arrayTeam")
                 .set("arrayfield", objectMapper.createArrayNode().add("a").add("c").add("bb").add("bd")));
 
-        addDocument(objectMapper.createObjectNode().put("id", "array2")
+        postDocument(objectMapper.createObjectNode().put("id", "array2")
                 .put("name", "Service Array 2")
                 .put("short_name", "ARR2")
                 .put("type", "service")
-                .put("description", RandomStringUtils.random(20))
+                .put("description", randomStringGenerator.generate(20))
                 .put("owner", "arrayTeam")
                 .set("arrayfield", objectMapper.createArrayNode().add("d").add("b").add("e")));
-
-        elasticsearchTemplate.refresh(PivioDocument.class);
-
-        teamLambdaQuery = objectMapper.createObjectNode();
-        ObjectNode match = teamLambdaQuery.putObject("match");
-        match.put("owner", "lambda");
     }
 
     @Test
-    public void returnsAllDocumentsMatchingSearchCriteria() throws IOException {
-        ObjectNode searchQuery = objectMapper.createObjectNode();
-        ObjectNode match = searchQuery.putObject("match");
+    public void search_returns_documents_matching_search_criteria() throws Exception {
+        // given
+        ObjectNode query = objectMapper.createObjectNode();
+        ObjectNode match = query.putObject("match");
         match.put("name", "Micro");
 
-        ArrayNode searchResult = executeSearch(searchQuery, "", "");
+        // when
+        ArrayNode searchResult = search(query);
 
+        // then
         assertThat(searchResult.findValues("id")).extracting(JsonNode::textValue).containsOnly("no2", "no3");
     }
 
     @Test
-    public void onlyReturnsRequestedFieldsOfDocuments() throws IOException {
-        ArrayNode searchResult = executeSearch(teamLambdaQuery, "newfield1,newfield2,", "");
+    public void search_returns_documents_containing_only_requested_fields() throws Exception {
+        // given
+        ObjectNode ownerLambdaQuery = createOwnerLambdaQuery();
+
+        // when
+        ArrayNode searchResult = search(ownerLambdaQuery, "newfield1,newfield2,", "");
+
+        // then
         assertThat(searchResult.findValues("id")).extracting(JsonNode::textValue).containsOnly("no1", "no2", "no3");
         assertThat(searchResult.get(2).fieldNames()).containsOnly("id", "newfield1", "newfield2");
     }
 
     @Test
-    public void sortResultsDescendingByshort_nameField() throws IOException {
-        ArrayNode searchResult = executeSearch(teamLambdaQuery, "newfield1", "short_name:desc");
+    public void search_returns_documents_sorted_descending_by_short_name() throws Exception {
+        // given
+        ObjectNode ownerLambdaQuery = createOwnerLambdaQuery();
+
+        // when
+        ArrayNode searchResult = search(ownerLambdaQuery, "newfield1", "short_name:desc");
+
+        // then
         assertThat(searchResult.findValues("id")).extracting(JsonNode::textValue).containsExactly("no1", "no2", "no3");
     }
 
     @Test
-    public void sortResultsAscendingByshort_nameFieldWithCommaAfterFieldInParameter() throws IOException {
-        ArrayNode searchResult = executeSearch(teamLambdaQuery, "newfield1", "short_name:asc,");
+    public void search_returns_documents_sorted_ascending_by_short_name_even_when_a_comma_follows_in_sort_parameter() throws Exception {
+        // given
+        ObjectNode ownerLambdaQuery = createOwnerLambdaQuery();
+
+        // when
+        ArrayNode searchResult = search(ownerLambdaQuery, "newfield1", "short_name:asc,");
+
+        // then
         assertThat(searchResult.findValues("id")).extracting(JsonNode::textValue).containsExactly("no2", "no3", "no1");
     }
 
     @Test
-    public void sortResultsAscendingByshort_nameAndDescendingByTeamField() throws IOException {
-        ObjectNode searchQuery = objectMapper.createObjectNode();
-        searchQuery.putObject("match_all");
+    public void search_returns_documents_sorted_ascending_by_short_name_and_descending_by_owner() throws Exception {
+        // given
+        ObjectNode query = objectMapper.createObjectNode();
+        query.putObject("match_all");
 
-        ArrayNode searchResult = executeSearch(searchQuery, "", "short_name:asc,owner:desc");
+        // when
+        ArrayNode searchResult = search(query, "", "short_name:asc,owner:desc");
+
+        // then
         assertThat(searchResult.findValues("id")).extracting(JsonNode::textValue).containsExactly("no2", "array", "array2", "no4", "no3", "nestedObject", "no1");
     }
 
+    /**
+     * <pre>
+     * {
+     *   "query": {
+     *     "nested": {
+     *       "path": "software_dependencies",
+     *       "query": {
+     *         "nested": {
+     *           "path": "software_dependencies.licenses",
+     *           "query": {
+     *             "match": {
+     *               "software_dependencies.licenses.key": "gpl"
+     *             }
+     *           }
+     *         }
+     *       }
+     *     }
+     *   }
+     * }
+     * </pre>
+     */
     @Test
-    public void sortWithNotExistingFieldShouldGiveEmptyResultSet() throws IOException {
-        ObjectNode searchQuery = objectMapper.createObjectNode();
-        searchQuery.putObject("match_all");
+    public void search_returns_document_matching_nested_query() throws Exception {
+        // given
+        ObjectNode query = objectMapper.createObjectNode();
+        ObjectNode outerNested = query.putObject("nested");
+        outerNested.put("path", "software_dependencies");
+        ObjectNode outerNestedQuery = outerNested.putObject("query");
+        ObjectNode innerNested = outerNestedQuery.putObject("nested");
+        innerNested.put("path", "software_dependencies.licenses");
+        ObjectNode innerNestedQuery = innerNested.putObject("query");
+        ObjectNode match = innerNestedQuery.putObject("match");
+        match.put("software_dependencies.licenses.key", "gpl");
 
-        ResponseEntity<JsonNode> responseEntity = restTemplate.getForEntity("http://localhost:" + port + "/document?query="
-                + URLEncoder.encode(searchQuery.toString(), "UTF-8") + "&sort=notexisting:asc", JsonNode.class);
-        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-    }
+        // when
+        ArrayNode searchResult = search(query);
 
-    @Test
-    public void queryForNestedObject() throws IOException {
-        ObjectNode searchQuery = objectMapper.createObjectNode();
-        ObjectNode nested = searchQuery.putObject("nested");
-        nested.put("path", "software_dependencies");
-        ObjectNode nestedQuery = nested.putObject("query");
-        ObjectNode matchQuery = nestedQuery.putObject("match");
-        matchQuery.put("software_dependencies.licences.key", "gpl");
-
-        ArrayNode searchResult = executeSearch(searchQuery, "", "");
+        // then
         assertThat(searchResult.findValues("id")).extracting(JsonNode::textValue).containsExactly("nestedObject");
     }
 
     @Test
-    public void queryForValuesInArray() throws IOException {
-        ObjectNode searchQuery = objectMapper.createObjectNode();
-        ObjectNode matchQuery = searchQuery.putObject("match");
+    public void search_returns_single_document_matching_data_in_array() throws Exception {
+        // given
+        ObjectNode query = objectMapper.createObjectNode();
+        ObjectNode matchQuery = query.putObject("match");
         matchQuery.put("arrayfield", "bd");
 
-        ArrayNode searchResult = executeSearch(searchQuery, "", "");
+        // when
+        ArrayNode searchResult = search(query);
+
+        // then
         assertThat(searchResult.findValues("id")).extracting(JsonNode::textValue).containsExactly("array");
     }
 
     @Test
-    public void queryForValuesInManyArrays() throws IOException {
-        ObjectNode searchQuery = objectMapper.createObjectNode();
-        ObjectNode matchQuery = searchQuery.putObject("prefix");
+    public void search_returns_all_documents_matching_data_in_array() throws Exception {
+        // given
+        ObjectNode query = objectMapper.createObjectNode();
+        ObjectNode matchQuery = query.putObject("prefix");
         matchQuery.put("arrayfield", "b");
 
-        ArrayNode searchResult = executeSearch(searchQuery, "", "");
-        assertThat(searchResult.findValues("id")).extracting(JsonNode::textValue).containsExactly("array2", "array");
+        // when
+        ArrayNode searchResult = search(query);
+
+        // then
+        assertThat(searchResult.findValues("id")).extracting(JsonNode::textValue).containsExactlyInAnyOrder("array", "array2");
     }
 
+    /**
+     * <pre>
+     * {
+     *   "query": {
+     *     "nested": {
+     *       "path": "software_dependencies",
+     *       "query": {
+     *          "match": {
+     *            "software_dependencies.name": "websitename"
+     *          }
+     *       }
+     *     }
+     *   }
+     * }
+     * </pre>
+     */
     @Test
-    public void queryForValuesWithColon() throws IOException {
-        ObjectNode searchQuery = objectMapper.createObjectNode();
-        ObjectNode matchQuery = searchQuery.putObject("match");
-        matchQuery.put("software_dependencies.name", "websitename");
+    public void search_returns_documents_matching_data_containing_colon() throws Exception {
+        // given
+        ObjectNode query = objectMapper.createObjectNode();
+        ObjectNode nested = query.putObject("nested");
+        nested.put("path", "software_dependencies");
+        ObjectNode nestedQuery = nested.putObject("query");
+        ObjectNode match = nestedQuery.putObject("match");
+        match.put("software_dependencies.name", "websitename");
 
-        ArrayNode searchResult = executeSearch(searchQuery, "", "");
+        // when
+        ArrayNode searchResult = search(query);
+
+        // then
         assertThat(searchResult.findValues("id")).extracting(JsonNode::textValue).containsExactly("nestedObject");
     }
 
     @Test
-    public void badRequestOnEmptyFieldsParameter() throws IOException {
-        ResponseEntity<JsonNode> responseEntity = restTemplate.getForEntity("http://localhost:" + port + "/document?query="
-                + URLEncoder.encode(teamLambdaQuery.toString(), "UTF-8") + "&fields=", JsonNode.class);
+    public void search_cannot_be_executed_when_fields_parameter_is_empty() throws Exception {
+        // given
+        String query = URLEncoder.encode(createOwnerLambdaQuery().toString(), "UTF-8");
+        String emptyFields = "";
+
+        // when
+        ResponseEntity<JsonNode> responseEntity = restTemplate.getForEntity("/document?query={query}&fields={fields}", JsonNode.class, query, emptyFields);
+
+        // then
         assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
     @Test
-    public void badRequestOnEmptySortParameter() throws IOException {
-        ResponseEntity<JsonNode> responseEntity = restTemplate.getForEntity("http://localhost:" + port + "/document?query="
-                + URLEncoder.encode(teamLambdaQuery.toString(), "UTF-8") + "&sort=", JsonNode.class);
-        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    public void search_cannot_be_executed_when_sort_parameter_is_empty() throws Exception {
+        assertThatSearchRequestWithSortParameterResultsInBadRequestResponse("");
     }
 
     @Test
-    public void badRequestOnSortParameterWithMissingColon() throws IOException {
-        ResponseEntity<JsonNode> responseEntity = restTemplate.getForEntity("http://localhost:" + port + "/document?query="
-                + URLEncoder.encode(teamLambdaQuery.toString(), "UTF-8") + "&sort=short_nameasc", JsonNode.class);
-        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    public void search_cannot_be_executed_when_sort_parameter_has_no_colon() throws Exception {
+        assertThatSearchRequestWithSortParameterResultsInBadRequestResponse("short_nameasc");
     }
 
     @Test
-    public void badRequestOnSortParameterWithWrongSortOrder() throws IOException {
-        ResponseEntity<JsonNode> responseEntity = restTemplate.getForEntity("http://localhost:" + port + "/document?query="
-                + URLEncoder.encode(teamLambdaQuery.toString(), "UTF-8") + "&sort=short_name:asce", JsonNode.class);
+    public void search_cannot_be_executed_when_fields_for_sorting_does_not_exist() throws Exception {
+        assertThatSearchRequestWithSortParameterResultsInBadRequestResponse("does_not_exist:asc");
+    }
+
+    @Test
+    public void search_cannot_be_executed_when_sort_order_is_invalid() throws Exception {
+        assertThatSearchRequestWithSortParameterResultsInBadRequestResponse("short_name:asce");
+    }
+
+    private ObjectNode createOwnerLambdaQuery() {
+        ObjectNode query = objectMapper.createObjectNode();
+        ObjectNode match = query.putObject("match");
+        match.put("owner", "lambda");
+        return query;
+    }
+
+    private void assertThatSearchRequestWithSortParameterResultsInBadRequestResponse(String sortParam) throws Exception {
+        // given
+        String query = createOwnerLambdaQuery().toString();
+
+        // when
+        ResponseEntity<JsonNode> responseEntity = search(query, sortParam);
+
+        // then
         assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
-    private void addDocument(JsonNode document) {
-        ResponseEntity<JsonNode> responseEntity = restTemplate.postForEntity("http://localhost:" + port + "/document", document, JsonNode.class);
-        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+    private ArrayNode search(JsonNode queryParam) throws Exception {
+        return search(queryParam, "", "");
     }
 
-    private ArrayNode executeSearch(JsonNode searchQuery, String fieldParameter, String sortParameter) throws IOException {
-        String searchParameter = URLEncoder.encode(searchQuery.toString(), "UTF-8");
-        if (StringUtils.isNotEmpty(fieldParameter)) {
-            searchParameter += "&fields=" + fieldParameter;
+    private ArrayNode search(JsonNode queryParam, String fieldsParam, String sortParam) throws Exception {
+        String searchParameter = "?query=" + URLEncoder.encode(queryParam.toString(), "UTF-8");
+        if (StringUtils.isNotBlank(fieldsParam)) {
+            searchParameter += "&fields=" + fieldsParam;
         }
-        if (StringUtils.isNotEmpty(sortParameter)) {
-            searchParameter += "&sort=" + sortParameter;
+        if (StringUtils.isNotBlank(sortParam)) {
+            searchParameter += "&sort=" + sortParam;
         }
+        String searchUrl = PIVIO_SERVER_BASE_URL + "/document" + searchParameter;
+        RequestEntity<Void> requestEntity = RequestEntity.get(URI.create(searchUrl)).header(CONTENT_TYPE, APPLICATION_JSON_VALUE).build();
+        return restTemplate.exchange(requestEntity, ArrayNode.class).getBody();
+    }
 
-        try (CloseableHttpClient httpClient = HttpClientBuilder.create().build()) {
-            HttpGet request = new HttpGet("http://localhost:" + port + "/document?query=" + searchParameter);
-            request.setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE);
-            HttpResponse response = httpClient.execute(request);
-            return (ArrayNode) objectMapper.readTree(EntityUtils.toString(response.getEntity(), "UTF-8"));
-        }
+    private ResponseEntity<JsonNode> search(String queryParam, String sortParam) throws Exception {
+        return restTemplate.getForEntity("/document?query={query}&sort={sort}", JsonNode.class, URLEncoder.encode(queryParam, "UTF-8"), sortParam);
     }
 }

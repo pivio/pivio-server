@@ -2,124 +2,128 @@
 
 > Aggregates all document information relevant for your platform.
 
-## How to run the server
+## How to run the server (without using Docker)
 
-1. Download Elasticsearch 1.7.x
-- Run Elasticsearch on localhost (default configuration)
-- Build pivio-server: `gradle build`
-- `java -jar build/libs/pivio-server-1.0.0.jar`
-- Access it on `http://localhost:9123`
+1. Build pivio-server: `./gradlew build -x test` (Note: If you want to run the tests, you need [Docker](https://docs.docker.com/engine/installation/))
+2. Install [Elasticsearch 2.4.6](https://www.elastic.co/guide/en/elasticsearch/reference/2.4/_installation.html)
+3. Install the Elasticsearch [Delete By Query Plugin](https://www.elastic.co/guide/en/elasticsearch/plugins/2.4/plugins-delete-by-query.html)
+3. Start Elasticsearch: `elasticsearch`
+4. Start pivio-server: `java -jar build/libs/pivio-server-1.1.0.jar`
+5. Access it at `http://localhost:9123/{document|changeset}` (see below)
 
-## How to run the server in docker
+## How to run the server using Docker (Compose)
 
-1. Build the jar: `gradle build`
-- `docker-compose up`
+1. Make sure [Docker](https://docs.docker.com/engine/installation/) is running and you have [Docker Compose](https://docs.docker.com/compose/install/) installed
+2. Build pivio-server: `./gradlew build`
+3. Start it, using `docker-compose up` - this will run Elasticsearch and pivio-server as Docker containers
+4. Access it at `http://localhost:9123/{document|changeset}` (see below)
 
-### This will launch two containers.
-
-1. The server itself
-- Elasticsearch as a container
-
-You can access it now your docker host at port 9123.
-
-If you need to rebuild the images (e.g. when you patched the sources) run
-
+If you need to rebuild the Docker images (e.g. when you patched the sources) run:
 ```bash
-gradle build
-docker-compose build
-docker-compose up
+./gradlew [clean] build
+docker-compose up [-d] --build
 ```
 
-## Insert Document Information
+## Insert document information
 
 ```bash
-curl -H "Content-Type: application/json" -X POST http://localhost:9123/document -d '{
+curl -H 'Content-Type: application/json' -X POST http://localhost:9123/document -d '{
   "id": "JustSomeId",
   "name": "Awesome Microservice",
   "type": "service",
-  "team": "lambda",
+  "owner": "lambda",
   "description": "Simple microservice"
 }'
 ```
 
-## Retrieve Document Information
+## Retrieve document information
 
 ```bash
-curl -H "Content-Type: application/json" -X GET http://localhost:9123/document/JustSomeId
+curl -H 'Content-Type: application/json' -X GET http://localhost:9123/document/JustSomeId
 ```
 
-## Retrieve Changesets of documents
+## Retrieve changesets of documents
 
 Everytime document is changed a new changeset will be generated.
 
 ### Retrieve all changesets
 
 ```bash
-curl -H "Content-Type: application/json" -X GET http://localhost:9123/changeset
+curl -H 'Content-Type: application/json' -X GET http://localhost:9123/changeset
 ```
 
 ### Retrieve all changesets for last 7 days
 
 ```bash
-curl -H "Content-Type: application/json" -X GET http://localhost:9123/changeset?since=7d
+curl -H 'Content-Type: application/json' -X GET http://localhost:9123/changeset?since=7d
 ```
 
 ### Retrieve all changesets for last 4 weeks
 
 ```bash
-curl -H "Content-Type: application/json" -X GET http://localhost:9123/changeset?since=4w
+curl -H 'Content-Type: application/json' -X GET http://localhost:9123/changeset?since=4w
 ```
 
 ### Retrieve all changesets of specific document
 
 ```bash
-curl -H "Content-Type: application/json" -X GET http://localhost:9123/document/JustSomeId/changeset
+curl -H 'Content-Type: application/json' -X GET http://localhost:9123/document/JustSomeId/changeset
 ```
 
 ### Retrieve all changesets of specific document for last 7 days
 
 ```bash
-curl -H "Content-Type: application/json" -X GET http://localhost:9123/document/JustSomeId/changeset?since=7d
+curl -H 'Content-Type: application/json' -X GET http://localhost:9123/document/JustSomeId/changeset?since=7d
 ```
 
-## Search API for Document Information
+## Search API for document information
 
-### Search for each Document of team Lambda
+For searching, a `query` URL parameter can be passed (see examples below). Its value is a JSON string that needs to be URL encoded.
+That is, at least the following JSON characters need to be replaced: 
+
+* `{` needs to be replaced by `%7B`
+* `"` needs to be replaced by `%22`
+* `:` needs to be replaced by `%3A`
+* `}` needs to be replaced by `%7D`
+* for a quick overview of further characters see Wikipedia's page [Percent-encoding](https://en.wikipedia.org/wiki/Percent-encoding#Percent-encoding_reserved_characters) page
+
+
+### Search for each document of owner Lambda
 
 ```bash
-curl -H "Content-Type: application/json" -X GET http://localhost:9123/document?query={"match":{"team":"lambda"}}'
+curl -H 'Content-Type: application/json' -X GET 'http://localhost:9123/document?query={"match":{"owner":"lambda"}}&fields=talks_to'
 ```
 
-You have to url encode the query parameter:
+Encoded:
 
 ```bash
-curl -H "Content-Type: application/json" -X GET http://localhost:9123/document?query=%7B%22match%22%3A%7B%22team%22%3A%22lambda%22%7D%7D
+curl -H 'Content-Type: application/json' -X GET 'http://localhost:9123/document?query=%7B%22match%22%3A%7B%22owner%22%3A%22lambda%22%7D%7D'
 ```
 
-### Search for each Document of team Lambda which has field talks_to present (will only return the field talks_to in results)
+### Search for each document of owner Lambda which has field talks_to present (will only return the field talks_to in results)
 
 ```bash
-curl -H "Content-Type: application/json" -X GET http://localhost:9123/document?query={"match":{"team":"lambda"}}'&fields=talks_to
+curl -H 'Content-Type: application/json' -X GET 'http://localhost:9123/document?query={"match":{"owner":"lambda"}}&fields=talks_to'
 ```
 
-Don't forget to url encode the query parameter:
+Encoded:
 
 ```bash
-curl -H "Content-Type: application/json" -X GET http://localhost:9123/document?query=%7B%22match%22%3A%7B%22team%22%3A%22lambda%22%7D%7D&fields=talks_to
+curl -H 'Content-Type: application/json' -X GET 'http://localhost:9123/document?query=%7B%22match%22%3A%7B%22owner%22%3A%22lambda%22%7D%7D&fields=talks_to'
 ```
 
-### Search for each Document of team Lambda and sort ascending by field lastUpdated
+### Search for each document of owner Lambda and sort ascending by field lastUpdated  
 
 ```bash
-curl -H "Content-Type: application/json" -X GET http://localhost:9123/document?query={"match":{"team":"lambda"}}'&sort=lastUpdate:asc
+curl -H 'Content-Type: application/json' -X GET 'http://localhost:9123/document?query={"match":{"owner":"lambda"}}&sort=lastUpdate:asc'
 ```
 
-Don't forget to url encode the query parameter:
+Encoded:
 
 ```bash
-curl -H "Content-Type: application/json" -X GET http://localhost:9123/document?query=%7B%22match%22%3A%7B%22team%22%3A%22lambda%22%7D%7D&sort=lastUpdate:asc
+curl -H 'Content-Type: application/json' -X GET 'http://localhost:9123/document?query=%7B%22match%22%3A%7B%22owner%22%3A%22lambda%22%7D%7D&sort=lastUpdate:asc'
 ```
 
-You can sort descending with desc instead of asc. You can also sort by multiple fields, just truncate them via comma. Order is important in this case, e.g. lastUpdate:asc,team:desc would first sort ascending by field lastUpdate and afterwards descending by field team if two entries have same lastUpdate value.
+You can sort descending with desc instead of asc. You can also sort by multiple fields, just truncate them via comma. Order is important in this case, e.g. lastUpdate:asc,owner:desc would first sort ascending by field lastUpdate and afterwards descending by field owner if two entries have same lastUpdate value.
 
-You can use the whole query types of Elasticsearch Search API ([Search API Documentation](https://www.elastic.co/guide/en/elasticsearch/reference/1.7/search.html)).
+You can use the whole query types of Elasticsearch Search API ([Search API Documentation](https://www.elastic.co/guide/en/elasticsearch/reference/2.4/search.html)).

@@ -20,24 +20,21 @@
         "type": "string"
       },
       "links": {
-        "type": "nested",
-        "include_in_parent": true
+        "type": "object"
       },
       "software_dependencies": {
         "type": "nested",
-        "include_in_parent": true,
+        "include_in_all": true,
         "properties": {
           "name": {
             "type": "string",
             "analyzer": "simple"
           },
           "version": {
-            "type": "string",
-            "analyzer": "simple"
+            "type": "string"
           },
-          "licences": {
+          "licenses": {
             "type": "nested",
-            "include_in_parent": true,
             "properties": {
               "key": {
                 "type": "string"

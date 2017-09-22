@@ -14,7 +14,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import java.text.ParseException;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
 
 @RunWith(SpringRunner.class)
 @JsonTest

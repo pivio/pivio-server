@@ -4,5 +4,7 @@ pivio:
    - "9123:9123"
   links:
    - elasticsearch
+
 elasticsearch:
-  build: src/docker/elasticsearch
+  image: elasticsearch:2.4.6
+  command: ["/bin/sh", "-c", "plugin install delete-by-query && gosu elasticsearch elasticsearch"]

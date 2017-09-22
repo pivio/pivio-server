@@ -3,11 +3,10 @@ package io.pivio.server.document;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -15,18 +14,18 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.metrics.CounterService;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 
 @CrossOrigin
 @RestController
@@ -37,9 +36,8 @@ public class SearchQueryController {
     private final Client client;
     private final ObjectMapper mapper;
     private final FieldFilter fieldFilter;
-    private CounterService counterService;
+    private final CounterService counterService;
 
-    @Autowired
     public SearchQueryController(Client client, ObjectMapper mapper, FieldFilter fieldFilter, CounterService counterService) {
         this.client = client;
         this.mapper = mapper;
@@ -60,21 +58,16 @@ public class SearchQueryController {
             return null;
         }
 
-        final SearchRequestBuilder searchRequest;
-        if (query != null) {
-            searchRequest = client.prepareSearch("steckbrief")
-                    .setTypes("steckbrief")
-                    .setSearchType(sort != null ? SearchType.DFS_QUERY_THEN_FETCH : SearchType.SCAN)
-                    .setScroll(new TimeValue(60000))
-                    .setQuery(query)
-                    .setSize(100);
-        } else {
-            searchRequest = client.prepareSearch("steckbrief")
-                    .setTypes("steckbrief")
-                    .setSearchType(sort != null ? SearchType.DFS_QUERY_THEN_FETCH : SearchType.SCAN)
-                    .setScroll(new TimeValue(60000))
-                    .setQuery(QueryBuilders.matchAllQuery())
-                    .setSize(100);
+        final SearchRequestBuilder searchRequest = client.prepareSearch("steckbrief")
+                .setTypes("steckbrief")
+                .setScroll(new TimeValue(60000))
+                .setSize(100);
+
+        if (StringUtils.isNotBlank(query)) {
+            searchRequest.setQuery(query);
+        }
+        else {
+            searchRequest.setQuery(QueryBuilders.matchAllQuery());
         }
 
         if (sort != null) {
@@ -99,7 +92,8 @@ public class SearchQueryController {
                     JsonNode document = mapper.readTree(searchHit.getSourceAsString());
                     if (filterForFields.isEmpty()) {
                         searchResult.add(document);
-                    } else {
+                    }
+                    else {
                         searchResult.add(fieldFilter.filterFields(document, filterForFields));
                     }
                 }
@@ -109,7 +103,8 @@ public class SearchQueryController {
                 }
             }
             return searchResult;
-        } catch (ElasticsearchException e) {
+        }
+        catch (ElasticsearchException e) {
             LOG.error("Could not execute search successfully, search request for ES: " + searchRequest.toString(), e);
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             return null;
@@ -136,17 +131,5 @@ public class SearchQueryController {
             }
         }
         return true;
-    }
-
-    private JsonNode filterFields(JsonNode document, List<String> fields) {
-        ObjectNode filteredDocument = mapper.createObjectNode();
-        Iterator<Map.Entry<String, JsonNode>> allFields = document.fields();
-        while (allFields.hasNext()) {
-            Map.Entry<String, JsonNode> currentField = allFields.next();
-            if (fields.contains(currentField.getKey())) {
-                filteredDocument.set(currentField.getKey(), currentField.getValue());
-            }
-        }
-        return filteredDocument;
     }
 }

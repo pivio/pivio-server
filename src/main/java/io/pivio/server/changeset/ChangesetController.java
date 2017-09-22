@@ -1,16 +1,15 @@
 package io.pivio.server.changeset;
 
-import io.pivio.server.ElasticsearchQueryHelper;
-import org.elasticsearch.action.search.SearchType;
+import io.pivio.server.elasticsearch.ElasticsearchQueryHelper;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 import org.joda.time.DateTime;
+import org.joda.time.format.ISODateTimeFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.metrics.CounterService;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -28,7 +27,6 @@ public class ChangesetController {
     private final ElasticsearchQueryHelper queryHelper;
     private final CounterService counterService;
 
-    @Autowired
     public ChangesetController(Client client, ElasticsearchQueryHelper queryHelper, CounterService counterService) {
         this.client = client;
         this.queryHelper = queryHelper;
@@ -46,7 +44,6 @@ public class ChangesetController {
         LOG.debug("Retrieving changesets for all documents", since);
         return ResponseEntity.ok(queryHelper.retrieveAllDocuments(client.prepareSearch("changeset")
                 .setTypes("changeset")
-                .setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
                 .addSort("timestamp", SortOrder.DESC)
                 .setScroll(new TimeValue(60000))
                 .setQuery(createQuery(since))
@@ -70,7 +67,6 @@ public class ChangesetController {
         LOG.debug("Retrieving changesets for document {} with since parameter {}", id, since);
         return ResponseEntity.ok(queryHelper.retrieveAllDocuments(client.prepareSearch("changeset")
                 .setTypes("changeset")
-                .setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
                 .addSort("timestamp", SortOrder.DESC)
                 .setScroll(new TimeValue(60000))
                 .setQuery(createQuery(id, since))
@@ -91,7 +87,8 @@ public class ChangesetController {
         try {
             int sinceValue = Integer.parseInt(since.substring(0, since.length() - 1));
             return sinceValue > 0;
-        } catch (NumberFormatException e) {
+        }
+        catch (NumberFormatException e) {
             return false;
         }
     }
@@ -99,7 +96,8 @@ public class ChangesetController {
     private QueryBuilder createQuery(String since) {
         if (since == null) {
             return QueryBuilders.matchAllQuery();
-        } else {
+        }
+        else {
             String sinceDate = calculateSinceDate(since);
             return QueryBuilders.rangeQuery("timestamp").gte(sinceDate).lte("now");
         }
@@ -108,7 +106,8 @@ public class ChangesetController {
     private QueryBuilder createQuery(String id, String since) {
         if (since == null) {
             return QueryBuilders.matchQuery("document", id);
-        } else {
+        }
+        else {
             String sinceDate = calculateSinceDate(since);
             return QueryBuilders.boolQuery()
                     .must(QueryBuilders.matchQuery("document", id))
@@ -120,9 +119,10 @@ public class ChangesetController {
         final DateTime sinceDate;
         if (since.charAt(since.length() - 1) == 'd') {
             sinceDate = DateTime.now().minusDays(Integer.parseInt(since.substring(0, since.length() - 1)));
-        } else {
+        }
+        else {
             sinceDate = DateTime.now().minusWeeks(Integer.parseInt(since.substring(0, since.length() - 1)));
         }
-        return sinceDate.getYear() + "-" + sinceDate.getMonthOfYear() + "-" + sinceDate.getDayOfMonth();
+        return ISODateTimeFormat.date().print(sinceDate);
     }
 }
