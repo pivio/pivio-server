@@ -1,20 +1,11 @@
 package io.pivio.server.document;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.pivio.server.TestHelper;
-import io.pivio.server.changeset.Changeset;
-import org.junit.Before;
+import io.pivio.server.AbstractApiTestCase;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
-import org.springframework.http.*;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
 import java.net.URI;
 import java.util.Iterator;
@@ -22,222 +13,289 @@ import java.util.LinkedList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.springframework.http.HttpStatus.CREATED;
 
-@RunWith(SpringRunner.class)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-public class DocumentApiTest {
+public class DocumentApiTest extends AbstractApiTestCase {
 
-    @Value("${local.server.port}")
-    private int port;
+    @Test
+    public void document_can_be_created() throws Exception {
+        // given
+        PivioDocument document = createDocumentWithSomeId();
 
-    @Autowired
-    private ElasticsearchTemplate elasticsearchTemplate;
+        // when
+        ResponseEntity<PivioDocument> responseEntity = postDocument(document);
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
-
-    @Autowired
-    private TestRestTemplate restTemplate;
-
-    @Before
-    public void cleanData() {
-        TestHelper.cleanElasticsearch(elasticsearchTemplate);
+        // then
+        assertThat(responseEntity.getStatusCode()).isEqualTo(CREATED);
+        assertThat(responseEntity.getHeaders().getLocation()).isEqualTo(URI.create("http://localhost:9123/document/" + SOME_ID));
     }
 
     @Test
-    public void insertNewDocument() throws Exception {
-        PivioDocument newPivioDocument = PivioDocument.builder().id("randomId").type("service").name("MicroService").serviceName("MS").description("Super service...").owner("Awesome Team").build();
-        ResponseEntity<PivioDocument> responseEntity = restTemplate.postForEntity("http://localhost:" + port + "/document", newPivioDocument, PivioDocument.class);
-        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        assertThat(responseEntity.getHeaders().getLocation()).isEqualTo(URI.create("http://localhost:" + port + "/document/randomId"));
+    public void document_with_big_id_can_be_created() throws Exception {
+        // given
+        String bigDocumentId = Integer.MAX_VALUE + "" + Integer.MAX_VALUE + "" + Integer.MAX_VALUE + "" + Integer.MAX_VALUE;
+        PivioDocument document = createDocumentWithId(bigDocumentId);
+
+        // when
+        ResponseEntity<PivioDocument> responseEntity = postDocument(document);
+
+        // then
+        assertThat(responseEntity.getStatusCode()).isEqualTo(CREATED);
     }
 
     @Test
-    public void insertDocumentWithBigNumberAsIDShouldNotFail() throws Exception {
-        PivioDocument newPivioDocument = PivioDocument.builder()
-                .id(Integer.MAX_VALUE + "" + Integer.MAX_VALUE + "" + Integer.MAX_VALUE + "" + Integer.MAX_VALUE)
-                .type("service")
-                .name("MicroService")
-                .serviceName("MS")
-                .description("Super service...")
-                .owner("Awesome Team")
-                .build();
-        ResponseEntity<PivioDocument> responseEntity = restTemplate.postForEntity("http://localhost:" + port + "/document", newPivioDocument, PivioDocument.class);
-        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-    }
+    public void document_with_empty_id_is_rejected() throws Exception {
+        // given
+        String emptyId = null;
+        PivioDocument documentWithEmptyId = createDocumentWithId(emptyId);
 
-    @Test
-    public void shouldRejectNewDocumentWithEmptyIdFieldInRequest() throws Exception {
-        PivioDocument newPivioDocument = PivioDocument.builder().type("service").name("MicroService").serviceName("MS").description("Super service...").owner("Awesome Team").build();
-        ResponseEntity<PivioDocument> responseEntity = restTemplate.postForEntity("http://localhost:" + port + "/document", newPivioDocument, PivioDocument.class);
+        // when
+        ResponseEntity<PivioDocument> responseEntity = postDocument(documentWithEmptyId);
+
+        // then
         assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(responseEntity.getBody().getId()).isNotEmpty();
     }
 
     @Test
-    public void shouldRejectNewDocumentWithoutIdFieldInRequest() throws Exception {
-        final ObjectNode document = objectMapper.createObjectNode();
-        document.put("type", "service");
-        document.put("name", "MicroService");
-        document.put("serviceName", "MS");
-        document.put("description", "Super service...");
-        document.put("owner", "Awesome Team");
+    public void document_without_id_is_rejected() throws Exception {
+        // given
+        ObjectNode documentWithoutId = objectMapper.createObjectNode();
+        documentWithoutId.put("type", "service");
+        documentWithoutId.put("name", "MicroService");
+        documentWithoutId.put("serviceName", "MS");
+        documentWithoutId.put("description", "Super service...");
+        documentWithoutId.put("owner", "Awesome Team");
 
-        ResponseEntity<PivioDocument> responseEntity = restTemplate.postForEntity("http://localhost:" + port + "/document", document, PivioDocument.class);
+        // when
+        ResponseEntity<PivioDocument> responseEntity = postDocumentWithOtherResponseType(documentWithoutId);
 
+        // then
         assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(responseEntity.getBody().getId()).isNotEmpty();
     }
 
     @Test
-    public void queryInsertedDocument() throws Exception {
-        PivioDocument newPivioDocument = PivioDocument.builder().id("randomId").type("service").name("MicroService").serviceName("MS").description("Super service...").owner("Awesome Team").build();
-        restTemplate.postForEntity("http://localhost:" + port + "/document", newPivioDocument, PivioDocument.class);
+    public void document_with_empty_mandatory_field_is_rejected() throws Exception {
+        // given
+        PivioDocument documentWithEmptyMandatoryField = createDocumentWithSomeId();
+        documentWithEmptyMandatoryField.setName(null);
 
-        ResponseEntity<JsonNode> responseEntity = restTemplate.getForEntity("http://localhost:" + port + "/document/randomId", JsonNode.class);
+        // when
+        ResponseEntity<PivioDocument> responseEntity = postDocument(documentWithEmptyMandatoryField);
 
+        // then
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    public void responds_with_meaningful_error_message_when_document_has_empty_mandatory_field() throws Exception {
+        // given
+        PivioDocument documentWithEmptyMandatoryField = createDocumentWithSomeId();
+        documentWithEmptyMandatoryField.setName(null);
+
+        // when
+        ResponseEntity<JsonNode> responseEntity = postDocumentWithOtherResponseType(documentWithEmptyMandatoryField);
+
+        // then
+        assertThat(responseEntity.getBody().get("error").asText()).isEqualToIgnoringCase("mandatory field 'name' is empty");
+    }
+
+    @Test
+    public void document_with_missing_mandatory_field_is_rejected() throws Exception {
+        // given
+        JsonNode documentWithMissingMandatoryField = objectMapper.createObjectNode().put("id", "randomId").put("name", "Micro Service");
+
+        // when
+        ResponseEntity<PivioDocument> responseEntity = postDocumentWithOtherResponseType(documentWithMissingMandatoryField);
+
+        // then
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    public void responds_with_meaningful_error_message_when_document_has_missng_mandatory_field() throws Exception {
+        // given
+        JsonNode documentWithMissingMandatoryField = objectMapper.createObjectNode().put("id", "randomId").put("name", "Micro Service");
+
+        // when
+        ResponseEntity<JsonNode> responseEntity = postDocument(documentWithMissingMandatoryField);
+
+        // then
+        assertThat(responseEntity.getBody().get("error").asText()).isEqualToIgnoringCase("mandatory field 'type' is missing");
+    }
+
+    @Test
+    public void existent_document_can_be_requested() throws Exception {
+        // given
+        postDocumentWithSomeId();
+
+        // when
+        ResponseEntity<JsonNode> responseEntity = getDocumentWithSomeId();
+
+        // then
         assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(responseEntity.getBody().get("id").asText()).isEqualTo(newPivioDocument.getId());
+        assertThat(responseEntity.getBody().get("id").asText()).isEqualTo(SOME_ID);
     }
 
     @Test
-    public void shouldAddCreatedFieldForNewDocument() throws Exception {
-        PivioDocument newPivioDocument = PivioDocument.builder().id("randomId").type("service").name("MicroService").serviceName("MS").description("Super service...").owner("Awesome Team").build();
-        restTemplate.postForEntity("http://localhost:" + port + "/document", newPivioDocument, PivioDocument.class);
+    public void existent_documents_can_be_requested() throws Exception {
+        // given
+        postDocumentWithId("id1");
+        postDocumentWithId("id2");
 
-        ResponseEntity<JsonNode> responseEntity = restTemplate.getForEntity("http://localhost:" + port + "/document/randomId", JsonNode.class);
+        // when
+        ResponseEntity<JsonNode> responseEntity = getDocuments();
 
-        assertThat(responseEntity.getBody().has("created")).isTrue();
-    }
-
-    @Test
-    public void shouldAddLastUpdateFieldForNewDocument() throws Exception {
-        PivioDocument newPivioDocument = PivioDocument.builder().id("randomId").type("service").name("MicroService").serviceName("MS").description("Super service...").owner("Awesome Team").build();
-        restTemplate.postForEntity("http://localhost:" + port + "/document", newPivioDocument, PivioDocument.class);
-
-        ResponseEntity<JsonNode> responseEntity = restTemplate.getForEntity("http://localhost:" + port + "/document/randomId", JsonNode.class);
-
-        assertThat(responseEntity.getBody().has("lastUpdate")).isTrue();
-    }
-
-    @Test
-    public void shouldAddLastUploadedFieldForNewDocument() throws Exception {
-        PivioDocument newPivioDocument = PivioDocument.builder().id("randomId").type("service").name("MicroService").serviceName("MS").description("Super service...").owner("Awesome Team").build();
-        restTemplate.postForEntity("http://localhost:" + port + "/document", newPivioDocument, PivioDocument.class);
-
-        ResponseEntity<JsonNode> responseEntity = restTemplate.getForEntity("http://localhost:" + port + "/document/randomId", JsonNode.class);
-
-        assertThat(responseEntity.getBody().has("lastUpload")).isTrue();
-    }
-
-    @Test
-    public void createdLastUploadAndLastUpdateShouldBeSameForNewInsertedDocument() throws Exception {
-        PivioDocument newPivioDocument = PivioDocument.builder().id("randomId").type("service").name("MicroService").serviceName("MS").description("Super service...").owner("Awesome Team").build();
-        restTemplate.postForEntity("http://localhost:" + port + "/document", newPivioDocument, PivioDocument.class);
-
-        ResponseEntity<JsonNode> responseEntity = restTemplate.getForEntity("http://localhost:" + port + "/document/randomId", JsonNode.class);
-
-        assertThat(responseEntity.getBody().get("lastUpload").textValue()).isEqualTo(responseEntity.getBody().get("created").textValue());
-        assertThat(responseEntity.getBody().get("lastUpload").textValue()).isEqualTo(responseEntity.getBody().get("lastUpdate").textValue());
-        assertThat(responseEntity.getBody().get("created").textValue()).isEqualTo(responseEntity.getBody().get("lastUpdate").textValue());
-    }
-
-    @Test
-    public void shouldUpdateLastUploadedFieldAlsoWhenNothingChanges() throws Exception {
-        PivioDocument newPivioDocument = PivioDocument.builder().id("randomId").type("service").name("MicroService").serviceName("MS").description("Super service...").owner("Awesome Team").build();
-        restTemplate.postForEntity("http://localhost:" + port + "/document", newPivioDocument, PivioDocument.class);
-
-        ResponseEntity<JsonNode> responseEntity = restTemplate.getForEntity("http://localhost:" + port + "/document/randomId", JsonNode.class);
-        String lastUpload = responseEntity.getBody().get("lastUpload").textValue();
-        String lastUpdate = responseEntity.getBody().get("lastUpdate").textValue();
-
-        elasticsearchTemplate.refresh(Changeset.class);
-        restTemplate.postForEntity("http://localhost:" + port + "/document", newPivioDocument, PivioDocument.class);
-        responseEntity = restTemplate.getForEntity("http://localhost:" + port + "/document/randomId", JsonNode.class);
-
-        assertThat(responseEntity.getBody().get("lastUpload").textValue()).isNotEqualTo(lastUpload);
-        assertThat(responseEntity.getBody().get("lastUpdate").textValue()).isEqualTo(lastUpdate);
-    }
-
-    @Test
-    public void shouldUpdateLastUpdatedFieldOnlyWhenSomethingChanges() throws Exception {
-        PivioDocument newPivioDocument = PivioDocument.builder().id("randomId").type("service").name("MicroService").serviceName("MS").description("Super service...").owner("Awesome Team").build();
-        restTemplate.postForEntity("http://localhost:" + port + "/document", newPivioDocument, PivioDocument.class);
-
-        ResponseEntity<JsonNode> responseEntity = restTemplate.getForEntity("http://localhost:" + port + "/document/randomId", JsonNode.class);
-        String lastUpload = responseEntity.getBody().get("lastUpload").textValue();
-        String lastUpdate = responseEntity.getBody().get("lastUpdate").textValue();
-
-        newPivioDocument.setOwner("User Team");
-        elasticsearchTemplate.refresh(Changeset.class);
-        restTemplate.postForEntity("http://localhost:" + port + "/document", newPivioDocument, PivioDocument.class);
-        responseEntity = restTemplate.getForEntity("http://localhost:" + port + "/document/randomId", JsonNode.class);
-
-        assertThat(responseEntity.getBody().get("lastUpload").textValue()).isNotEqualTo(lastUpload);
-        assertThat(responseEntity.getBody().get("lastUpdate").textValue()).isNotEqualTo(lastUpdate);
-    }
-
-    @Test
-    public void retrieveAllDocuments() throws Exception {
-        PivioDocument firstDocument = PivioDocument.builder().id("randomId").type("service").name("MicroService").serviceName("MS").description("Super service...").owner("Awesome Team").build();
-        PivioDocument secondDocument = PivioDocument.builder().id("randomId2").type("service").name("MicroService").serviceName("MS").description("Super service...").owner("Awesome Team").build();
-
-        restTemplate.postForEntity("http://localhost:" + port + "/document", firstDocument, PivioDocument.class);
-        restTemplate.postForEntity("http://localhost:" + port + "/document", secondDocument, PivioDocument.class);
-        elasticsearchTemplate.refresh(PivioDocument.class);
-
-        ResponseEntity<JsonNode> responseEntity = restTemplate.getForEntity("http://localhost:" + port + "/document", JsonNode.class);
-
+        // then
         assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(toList(responseEntity.getBody())).hasSize(2);
     }
 
     @Test
-    public void notFoundForNotExistingDocuments() throws Exception {
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Content-Type", MediaType.APPLICATION_JSON_VALUE);
-        ResponseEntity<JsonNode> responseEntity = restTemplate.exchange("http://localhost:" + port + "/document/notExisting", HttpMethod.GET, new HttpEntity<>(null, headers), JsonNode.class);
+    public void non_existent_document_cannot_be_requested() throws Exception {
+        // when
+        ResponseEntity<JsonNode> responseEntity = getDocumentWithId("nonExistentId");
 
+        // then
         assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 
     @Test
-    public void deleteInsertedDocument() throws Exception {
-        PivioDocument newPivioDocument = PivioDocument.builder().id("randomId").type("service").name("MicroService").serviceName("MS").description("Super service...").owner("Awesome Team").build();
-        restTemplate.postForEntity("http://localhost:" + port + "/document", newPivioDocument, PivioDocument.class);
+    public void created_field_is_added_to_document() throws Exception {
+        // given
+        postDocumentWithSomeId();
 
-        restTemplate.delete("http://localhost:" + port + "/document/randomId");
+        // when
+        ResponseEntity<JsonNode> responseEntity = getDocumentWithSomeId();
 
-        ResponseEntity<JsonNode> responseEntity = restTemplate.getForEntity("http://localhost:" + port + "/document/randomId", JsonNode.class);
+        // then
+        assertThat(responseEntity.getBody().has("created")).isTrue();
+    }
 
+    @Test
+    public void lastUpdate_field_is_added_to_document() throws Exception {
+        // given
+        postDocumentWithSomeId();
+
+        // when
+        ResponseEntity<JsonNode> responseEntity = getDocumentWithSomeId();
+
+        // then
+        assertThat(responseEntity.getBody().has("lastUpdate")).isTrue();
+    }
+
+    @Test
+    public void lastUpload_field_is_added_to_document() throws Exception {
+        // given
+        postDocumentWithSomeId();
+
+        // when
+        ResponseEntity<JsonNode> responseEntity = getDocumentWithSomeId();
+
+        // then
+        assertThat(responseEntity.getBody().has("lastUpload")).isTrue();
+    }
+
+    @Test
+    public void created_lastUpdate_and_lastUpload_fields_are_identical_for_a_new_document() throws Exception {
+        // given
+        postDocumentWithSomeId();
+
+        // when
+        ResponseEntity<JsonNode> responseEntity = getDocumentWithSomeId();
+
+        // then
+        assertThat(responseEntity.getBody().get("lastUpdate").textValue()).isEqualTo(responseEntity.getBody().get("created").textValue());
+        assertThat(responseEntity.getBody().get("lastUpload").textValue()).isEqualTo(responseEntity.getBody().get("lastUpdate").textValue());
+    }
+
+    @Test
+    public void lastUpdate_field_is_changed_when_document_has_changed() throws Exception {
+        // given
+        PivioDocument document = postDocumentWithSomeId();
+        ResponseEntity<JsonNode> responseEntity = getDocumentWithSomeId();
+        String firstCreated = responseEntity.getBody().get("created").textValue();
+        String firstLastUpdate = responseEntity.getBody().get("lastUpdate").textValue();
+        String firstLastUpload = responseEntity.getBody().get("lastUpload").textValue();
+
+        // when
+        document.setOwner("User Team");
+        postDocumentWithOtherResponseType(document);
+        responseEntity = getDocumentWithSomeId();
+        String secondCreated = responseEntity.getBody().get("created").textValue();
+        String secondLastUpdate = responseEntity.getBody().get("lastUpdate").textValue();
+        String secondLastUpload = responseEntity.getBody().get("lastUpload").textValue();
+
+        // then
+        assertThat(secondCreated).isEqualTo(firstCreated);
+        assertThat(secondLastUpdate).isNotEqualTo(firstLastUpdate);
+        assertThat(secondLastUpload).isNotEqualTo(firstLastUpload);
+    }
+
+    @Test
+    public void lastUpload_field_is_changed_when_the_same_document_is_resent() throws Exception {
+        // given
+        PivioDocument document = postDocumentWithSomeId();
+        ResponseEntity<JsonNode> responseEntity = getDocumentWithSomeId();
+        String firstCreated = responseEntity.getBody().get("created").textValue();
+        String firstLastUpdate = responseEntity.getBody().get("lastUpdate").textValue();
+        String firstLastUpload = responseEntity.getBody().get("lastUpload").textValue();
+
+        // when
+        postDocumentWithOtherResponseType(document);
+        responseEntity = getDocumentWithSomeId();
+        String secondCreated = responseEntity.getBody().get("created").textValue();
+        String secondLastUpdate = responseEntity.getBody().get("lastUpdate").textValue();
+        String secondLastUpload = responseEntity.getBody().get("lastUpload").textValue();
+
+        // then
+        assertThat(secondCreated).isEqualTo(firstCreated);
+        assertThat(secondLastUpdate).isEqualTo(firstLastUpdate);
+        assertThat(secondLastUpload).isNotEqualTo(firstLastUpload);
+    }
+
+    @Test
+    public void document_can_be_deleted() throws Exception {
+        // given
+        postDocumentWithSomeId();
+
+        // when
+        deleteDocumentWithSomeId();
+
+        // and
+        ResponseEntity<JsonNode> responseEntity = getDocumentWithSomeId();
+
+        // then
         assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 
-    @Test
-    public void shouldRejectDocumentWithEmptyMandatoryField() throws Exception {
-        PivioDocument newPivioDocument = PivioDocument.builder().id("randomId").type("service").serviceName("MS").description("Super service...").owner("Awesome Team").build();
-        ResponseEntity<PivioDocument> responseEntity = restTemplate.postForEntity("http://localhost:" + port + "/document", newPivioDocument, PivioDocument.class);
-        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    private PivioDocument createDocumentWithSomeId() {
+        return createDocumentWithId(SOME_ID);
     }
 
-    @Test
-    public void shouldRejectDocumentWithMissingMandatoryField() throws Exception {
-        JsonNode pivioDocumentJson = objectMapper.createObjectNode().put("id", "randomId").put("name", "Micro Service");
-        ResponseEntity<PivioDocument> responseEntity = restTemplate.postForEntity("http://localhost:" + port + "/document", pivioDocumentJson, PivioDocument.class);
-        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    private ResponseEntity<PivioDocument> postDocumentWithOtherResponseType(JsonNode document) {
+        return postDocument(document, PivioDocument.class);
     }
 
-    @Test
-    public void shouldRespondWithMeaningfulErrorMessageOnEmptyMandatoryField() throws Exception {
-        PivioDocument newDocument = PivioDocument.builder().id("randomId").type("service").name("").serviceName("MS").description("Super service...").owner("Awesome Team").build();
-        ResponseEntity<JsonNode> responseEntity = restTemplate.postForEntity("http://localhost:" + port + "/document", newDocument, JsonNode.class);
-        assertThat(responseEntity.getBody().get("error").asText()).isEqualToIgnoringCase("mandatory field 'name' is empty");
+    private ResponseEntity<JsonNode> postDocumentWithOtherResponseType(PivioDocument document) {
+        return postDocument(document, JsonNode.class);
     }
 
-    @Test
-    public void shouldRespondWithMeaningfulErrorMessageOnMissingMandatoryField() throws Exception {
-        JsonNode newDocument = objectMapper.createObjectNode().put("id", "randomId").put("name", "Micro Service");
-        ResponseEntity<JsonNode> responseEntity = restTemplate.postForEntity("http://localhost:" + port + "/document", newDocument, JsonNode.class);
-        assertThat(responseEntity.getBody().get("error").asText()).isEqualToIgnoringCase("mandatory field 'type' is missing");
+    private ResponseEntity<JsonNode> getDocuments() {
+        return restTemplate.getForEntity("/document", JsonNode.class);
+    }
+
+    private ResponseEntity<JsonNode> getDocumentWithSomeId() {
+        return getDocumentWithId(SOME_ID);
+    }
+
+    private ResponseEntity<JsonNode> getDocumentWithId(String id) {
+        return restTemplate.getForEntity("/document/{id}", JsonNode.class, id);
+    }
+
+    private void deleteDocumentWithSomeId() {
+        restTemplate.delete("/document/someId");
     }
 
     private List<JsonNode> toList(JsonNode json) {

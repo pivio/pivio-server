@@ -1,4 +1,4 @@
-package io.pivio.server;
+package io.pivio.server.elasticsearch;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -9,7 +9,6 @@ import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.search.SearchHit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -22,7 +21,6 @@ public class ElasticsearchQueryHelper {
     private final Client client;
     private final ObjectMapper mapper;
 
-    @Autowired
     public ElasticsearchQueryHelper(Client client, ObjectMapper mapper) {
         this.client = client;
         this.mapper = mapper;
@@ -46,7 +44,8 @@ public class ElasticsearchQueryHelper {
                 }
             }
             return allDocuments;
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             LOG.warn("Could not retrieve all documents for " + searchRequest.toString(), e);
             return mapper.createArrayNode();
         }

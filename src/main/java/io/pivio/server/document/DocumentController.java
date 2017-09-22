@@ -45,7 +45,6 @@ public class DocumentController {
 
     private CounterService counterService;
 
-    @Autowired
     public DocumentController(Client client, ChangesetService changesetService, ObjectMapper mapper, CounterService counterService) {
         this.client = client;
         this.changesetService = changesetService;
@@ -81,10 +80,12 @@ public class DocumentController {
             document.put("lastUpload", ISODateTimeFormat.dateTime().print(changeset.getTimestamp()));
             if (changeset.isEmpty()) {
                 document.put("lastUpdate", getFieldOrElse(persistentPivioDocumentJson, "lastUpdate", formattedChangeTime));
-            } else {
+            }
+            else {
                 document.put("lastUpdate", formattedChangeTime);
             }
-        } else {
+        }
+        else {
             document.put("created", formattedChangeTime);
             document.put("lastUpdate", formattedChangeTime);
             document.put("lastUpload", formattedChangeTime);
@@ -130,7 +131,8 @@ public class DocumentController {
         if (missingMandatoryField != null) {
             LOG.info("Received document with missing mandatory field in {}", document.toString());
             error.put("error", "mandatory field '" + missingMandatoryField + "' is missing");
-        } else {
+        }
+        else {
             LOG.info("Received document with empty mandatory field in {}", document.toString());
             error.put("error", "mandatory field '" + getEmptyMandatoryField(document) + "' is empty");
         }
@@ -200,7 +202,8 @@ public class DocumentController {
                     .actionGet();
             LOG.info("Deleted document {} successfully", id);
             return ResponseEntity.noContent().build();
-        } else {
+        }
+        else {
             LOG.warn("Could not delete document {}", id);
             return ResponseEntity.notFound().build();
         }
