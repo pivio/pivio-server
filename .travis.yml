@@ -6,5 +6,3 @@ jdk:
 
 services:
   - docker
-
-script: ./gradlew clean build
