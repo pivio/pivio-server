@@ -4,8 +4,10 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import org.joda.time.DateTime;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Mapping;
+import org.springframework.data.elasticsearch.annotations.Setting;
 
 @Document(indexName = "changeset", type = "changeset")
+@Setting(settingPath = "settings.json")
 @Mapping(mappingPath = "changeset-mapping.json")
 public class Changeset {
 
