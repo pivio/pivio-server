@@ -1,9 +1,11 @@
 buildscript {
     repositories {
         jcenter()
+        maven { url 'http://repo.spring.io/snapshot' }
+        maven { url 'http://repo.spring.io/milestone' }
     }
     dependencies {
-        classpath 'org.springframework:springloaded:1.2.8.RELEASE'
+        classpath 'org.springframework.boot:spring-boot-gradle-plugin:2.0.0.M4'
     }
 }
 
@@ -14,8 +16,10 @@ plugins {
     id 'java'
     id 'idea'
     id 'org.sonarqube' version '2.5'
-    id 'org.springframework.boot' version '1.5.8.RELEASE'
 }
+
+apply plugin: 'org.springframework.boot'
+apply plugin: 'io.spring.dependency-management'
 
 clean {
     delete 'data'
@@ -28,11 +32,13 @@ license {
 
 jar {
     baseName = 'pivio-server'
-    version = '1.1.0'
+    version = '1.2.0'
 }
 
 repositories {
     jcenter()
+    maven { url 'http://repo.spring.io/snapshot' }
+    maven { url 'http://repo.spring.io/milestone' }
 }
 
 dependencies {
