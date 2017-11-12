@@ -10,12 +10,12 @@ buildscript {
 }
 
 plugins {
-    id 'com.github.ben-manes.versions' version '0.15.0'
+    id 'com.github.ben-manes.versions' version '0.17.0'
     id 'com.github.hierynomus.license' version '0.14.0'
     id 'jacoco'
     id 'java'
     id 'idea'
-    id 'org.sonarqube' version '2.5'
+    id 'org.sonarqube' version '2.6'
 }
 
 apply plugin: 'org.springframework.boot'
@@ -43,7 +43,7 @@ repositories {
 
 dependencies {
     compile 'com.flipkart.zjsonpatch:zjsonpatch:0.3.6'
-    compile 'org.apache.commons:commons-lang3:3.6'
+    compile 'org.apache.commons:commons-lang3:3.7'
     compile 'org.elasticsearch.plugin:delete-by-query:2.4.6'
     compile 'org.springframework.boot:spring-boot-starter-actuator'
     compile 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
@@ -54,7 +54,7 @@ dependencies {
     testCompile 'org.assertj:assertj-core:3.8.0'
     testCompile 'org.awaitility:awaitility:3.0.0'
     testCompile 'org.springframework.boot:spring-boot-starter-test'
-    testCompile 'org.testcontainers:testcontainers:1.4.2'
+    testCompile 'org.testcontainers:testcontainers:1.4.3'
 }
 
 task wrapper(type: Wrapper) {
