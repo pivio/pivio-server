@@ -60,3 +60,7 @@ dependencies {
 task wrapper(type: Wrapper) {
     gradleVersion = '4.3.1'
 }
+
+tasks.withType(Test) {
+    systemProperty 'gradleIsRunning', true
+}

@@ -1,5 +1,6 @@
 package io.pivio.server;
 
+import org.assertj.core.util.Files;
 import org.junit.runner.Description;
 import org.springframework.boot.test.util.EnvironmentTestUtils;
 import org.springframework.context.ApplicationContextInitializer;
@@ -17,8 +18,29 @@ public class DockerEnvironmentInitializer implements ApplicationContextInitializ
 
     @Override
     public void initialize(ConfigurableApplicationContext applicationContext) {
+        buildMainSourcesWhenRunningTestsWithoutGradle();
         DockerComposeContainer dockerEnvironment = startPivioServerAndElasticsearchDockerContainers();
         setSpringDataElasticsearchClusterNodesProperty(applicationContext, dockerEnvironment);
+    }
+
+    private void buildMainSourcesWhenRunningTestsWithoutGradle() {
+        if (runningWithoutGradle()) {
+            try {
+                new ProcessBuilder("./gradlew", "build", "-x", "test")
+                        .directory(Files.currentFolder())
+                        .inheritIO()
+                        .start()
+                        .waitFor();
+            }
+            catch (Exception e) {
+                throw new RuntimeException("could not build main sources prior to running tests", e);
+            }
+        }
+    }
+
+    private boolean runningWithoutGradle() {
+        // Property is set in build.gradle for all Test tasks
+        return System.getProperty("gradleIsRunning") == null;
     }
 
     private DockerComposeContainer startPivioServerAndElasticsearchDockerContainers() {
