@@ -1,11 +1,11 @@
 # pivio-server
 
-## Status
+> Aggregates all document information relevant for your platform.
+
+## Build Status
 
 [![Build Status](https://travis-ci.org/pivio/pivio-server.svg?branch=master)](https://travis-ci.org/pivio/pivio-server)
 
-
-> Aggregates all document information relevant for your platform.
 
 ## How to run the server (without using Docker)
 
