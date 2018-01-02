@@ -50,7 +50,7 @@ public abstract class AbstractApiTestCase {
     }
 
     private void waitUntilPivioServerIsUp() {
-        await().atMost(40, SECONDS).until(() -> {
+        await().atMost(180, SECONDS).until(() -> {
             String documentResponse = "";
             RestTemplate faultSensitiveRestTemplate = new RestTemplateBuilder().rootUri(PIVIO_SERVER_BASE_URL).build();
             try {
