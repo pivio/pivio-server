@@ -36,7 +36,7 @@ repositories {
 }
 
 dependencies {
-    compile 'com.flipkart.zjsonpatch:zjsonpatch:0.3.6'
+    compile 'com.flipkart.zjsonpatch:zjsonpatch:0.4.2'
     compile 'org.apache.commons:commons-lang3:3.7'
     compile 'org.elasticsearch.plugin:delete-by-query:2.4.6'
     compile 'org.springframework.boot:spring-boot-starter-actuator'
@@ -44,11 +44,11 @@ dependencies {
     compile 'org.springframework.boot:spring-boot-starter-web'
 
     testCompile 'com.jayway.jsonpath:json-path'
-    testCompile 'org.apache.commons:commons-text:1.1'
-    testCompile 'org.assertj:assertj-core:3.8.0'
+    testCompile 'org.apache.commons:commons-text:1.2'
+    testCompile 'org.assertj:assertj-core:3.9.0'
     testCompile 'org.awaitility:awaitility:3.0.0'
     testCompile 'org.springframework.boot:spring-boot-starter-test'
-    testCompile 'org.testcontainers:testcontainers:1.4.3'
+    testCompile 'org.testcontainers:testcontainers:1.5.1'
 }
 
 // see https://github.com/ben-manes/gradle-versions-plugin
