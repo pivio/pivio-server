@@ -41,7 +41,7 @@ public class ChangesetController {
             return ResponseEntity.badRequest().build();
         }
 
-        LOG.debug("Retrieving changesets for all documents", since);
+        LOG.debug("Retrieving changesets for all documents with since parameter {}", since);
         return ResponseEntity.ok(queryHelper.retrieveAllDocuments(client.prepareSearch("changeset")
                 .setTypes("changeset")
                 .addSort("timestamp", SortOrder.DESC)
