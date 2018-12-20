@@ -2,22 +2,52 @@
   "steckbrief": {
     "properties": {
       "type": {
-        "type": "string"
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword"
+          }
+        }
       },
       "name": {
-        "type": "string"
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword"
+          }
+        }
       },
       "short_name": {
-        "type": "string"
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword"
+          }
+        }
       },
       "owner": {
-        "type": "string"
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword"
+          }
+        }
       },
       "description": {
-        "type": "string"
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword"
+          }
+        }
       },
       "vcsroot": {
-        "type": "string"
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword"
+          }
+        }
       },
       "links": {
         "type": "object"
@@ -27,23 +57,48 @@
         "include_in_all": true,
         "properties": {
           "name": {
-            "type": "string",
-            "analyzer": "simple"
+            "type": "text",
+            "analyzer": "simple",
+            "fields": {
+              "keyword": {
+                "type": "keyword"
+              }
+            }
           },
           "version": {
-            "type": "string"
+            "type": "text",
+            "fields": {
+              "keyword": {
+                "type": "keyword"
+              }
+            }
           },
           "licenses": {
             "type": "nested",
             "properties": {
               "key": {
-                "type": "string"
+                "type": "text",
+                "fields": {
+                  "keyword": {
+                    "type": "keyword"
+                  }
+                }
               },
               "fullName": {
-                "type": "string"
+                "type": "text",
+                "fields": {
+                  "keyword": {
+                    "type": "keyword"
+                  }
+                }
               },
               "url": {
-                "type": "string"
+                "type": "text",
+                "fields": {
+                  "keyword": {
+                    "type": "keyword"
+                  }
+                }
               }
             }
           }

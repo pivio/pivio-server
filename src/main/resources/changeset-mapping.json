@@ -2,7 +2,7 @@
   "changeset": {
     "properties": {
       "document": {
-        "type": "string"
+        "type": "text"
       },
       "timestamp": {
         "type": "date"
@@ -15,14 +15,14 @@
         "include_in_all": true,
         "properties": {
           "path": {
-            "type": "string",
+            "type": "text",
             "analyzer": "simple"
           },
           "value": {
-            "type": "string"
+            "type": "text"
           },
           "op": {
-            "type": "string"
+            "type": "text"
           }
         }
       }

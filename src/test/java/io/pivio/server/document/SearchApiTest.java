@@ -128,6 +128,7 @@ public class SearchApiTest extends AbstractApiTestCase {
         assertThat(searchResult.findValues("id")).extracting(JsonNode::textValue).containsExactly("no1", "no2", "no3");
     }
 
+
     @Test
     public void search_returns_documents_sorted_ascending_by_short_name_even_when_a_comma_follows_in_sort_parameter() throws Exception {
         // given
@@ -137,7 +138,7 @@ public class SearchApiTest extends AbstractApiTestCase {
         ArrayNode searchResult = search(ownerLambdaQuery, "newfield1", "short_name:asc,");
 
         // then
-        assertThat(searchResult.findValues("id")).extracting(JsonNode::textValue).containsExactly("no2", "no3", "no1");
+        assertThat(searchResult.findValues("id")).extracting(JsonNode::textValue).containsExactly("no3", "no2", "no1");
     }
 
     @Test
@@ -150,7 +151,7 @@ public class SearchApiTest extends AbstractApiTestCase {
         ArrayNode searchResult = search(query, "", "short_name:asc,owner:desc");
 
         // then
-        assertThat(searchResult.findValues("id")).extracting(JsonNode::textValue).containsExactly("no2", "array", "array2", "no4", "no3", "nestedObject", "no1");
+        assertThat(searchResult.findValues("id")).extracting(JsonNode::textValue).containsExactly("array", "array2", "no4", "no3", "no2", "nestedObject", "no1");
     }
 
     /**

@@ -1,50 +1,56 @@
 package io.pivio.server.document;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.pivio.server.changeset.ChangesetService;
-import org.elasticsearch.action.ListenableActionFuture;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.elasticsearch.action.delete.DeleteRequestBuilder;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.rest.RestStatus;
 import org.junit.Before;
 import org.junit.Test;
-import org.springframework.boot.actuate.metrics.CounterService;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@RunWith(MockitoJUnitRunner.class)
 public class DocumentControllerTest {
 
-    private Client client = null;
+    @Mock
+    Client clientMock;
+
+    @Mock
+    MeterRegistry meterRegistryMock;
+
     DocumentController documentController;
-    ObjectMapper objectMapper;
-    CounterService counterService;
 
     @Before
     public void setUp() {
-        client = mock(Client.class);
-        counterService = mock(CounterService.class);
-        objectMapper = new ObjectMapper();
-        documentController = new DocumentController(client, new ChangesetService(client, objectMapper), objectMapper, counterService);
+        when(meterRegistryMock.counter(anyString())).thenReturn(mock(Counter.class));
+        documentController = new DocumentController(clientMock, null, null, meterRegistryMock);
     }
 
     @Test
     public void testDeleteNotFound() throws Exception {
-        String id = "1";
-        DeleteRequestBuilder mockDeleteRequestBuilder = mock(DeleteRequestBuilder.class);
-        ListenableActionFuture mockListenableActionFuture = mock(ListenableActionFuture.class);
-        DeleteResponse mockDeleteResponse = mock(DeleteResponse.class);
+        // given
+        String unknownDocumentId = "unknownDocumentId";
 
-        when(client.prepareDelete("steckbrief", "steckbrief", id)).thenReturn(mockDeleteRequestBuilder);
-        when(mockDeleteRequestBuilder.execute()).thenReturn(mockListenableActionFuture);
-        when(mockListenableActionFuture.actionGet()).thenReturn(mockDeleteResponse);
-        when(mockDeleteResponse.isFound()).thenReturn(false);
+        // and
+        DeleteResponse deleteResponseMock = mock(DeleteResponse.class);
+        when(deleteResponseMock.status()).thenReturn(RestStatus.NOT_FOUND);
+        DeleteRequestBuilder deleteRequestBuilderMock = mock(DeleteRequestBuilder.class);
+        when(deleteRequestBuilderMock.get()).thenReturn(deleteResponseMock);
+        when(clientMock.prepareDelete("steckbrief", "steckbrief", unknownDocumentId)).thenReturn(deleteRequestBuilderMock);
 
-        ResponseEntity response = documentController.delete(id);
 
+        // when
+        ResponseEntity response = documentController.delete(unknownDocumentId);
+
+        // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
-
 }

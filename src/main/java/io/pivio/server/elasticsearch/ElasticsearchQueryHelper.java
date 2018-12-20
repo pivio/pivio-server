@@ -11,8 +11,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-
 @Component
 public class ElasticsearchQueryHelper {
 
@@ -27,18 +25,18 @@ public class ElasticsearchQueryHelper {
     }
 
     public boolean isDocumentPresent(String index, String type, String id) {
-        return client.prepareGet(index, type, id).execute().actionGet().isExists();
+        return client.prepareGet(index, type, id).get().isExists();
     }
 
-    public ArrayNode retrieveAllDocuments(SearchRequestBuilder searchRequest) throws IOException {
+    public ArrayNode retrieveAllDocuments(SearchRequestBuilder searchRequest) {
         try {
-            SearchResponse searchResponse = searchRequest.execute().actionGet();
+            SearchResponse searchResponse = searchRequest.get();
             ArrayNode allDocuments = mapper.createArrayNode();
             while (true) {
                 for (SearchHit searchHit : searchResponse.getHits().getHits()) {
                     allDocuments.add(mapper.readTree(searchHit.getSourceAsString()));
                 }
-                searchResponse = client.prepareSearchScroll(searchResponse.getScrollId()).setScroll(new TimeValue(60000)).execute().actionGet();
+                searchResponse = client.prepareSearchScroll(searchResponse.getScrollId()).setScroll(new TimeValue(60000)).get();
                 if (searchResponse.getHits().getHits().length == 0) {
                     break;
                 }

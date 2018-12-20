@@ -8,6 +8,7 @@ import io.pivio.server.AbstractApiTestCase;
 import io.pivio.server.document.PivioDocument;
 import net.minidev.json.JSONArray;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.common.xcontent.XContentType;
 import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
@@ -326,7 +327,7 @@ public class ChangesetApiTest extends AbstractApiTestCase {
 
     private void persistDocumentWithoutCreatingChangeset(JsonNode document) throws JsonProcessingException {
         client.prepareIndex("steckbrief", "steckbrief", document.get("id").asText())
-                .setSource(document.toString())
+                .setSource(document.toString(), XContentType.JSON)
                 .execute()
                 .actionGet();
         elasticsearchTemplate.refresh(PivioDocument.class);
@@ -335,8 +336,8 @@ public class ChangesetApiTest extends AbstractApiTestCase {
     private void persistChangesets(Changeset... changesets) throws JsonProcessingException {
         for (Changeset changeset : changesets) {
             client.prepareIndex("changeset", "changeset")
-                    .setSource(objectMapper.writeValueAsString(changeset))
-                    .setCreate(true)
+                    .setSource(objectMapper.writeValueAsString(changeset), XContentType.JSON)
+                    // .setCreate(true)
                     .execute()
                     .actionGet();
         }

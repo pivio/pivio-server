@@ -3,6 +3,8 @@ package io.pivio.server.document;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.search.SearchRequestBuilder;
@@ -14,7 +16,6 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.actuate.metrics.CounterService;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.net.URLDecoder;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -36,13 +38,13 @@ public class SearchQueryController {
     private final Client client;
     private final ObjectMapper mapper;
     private final FieldFilter fieldFilter;
-    private final CounterService counterService;
+    private final Counter documentGetCallsCounter;
 
-    public SearchQueryController(Client client, ObjectMapper mapper, FieldFilter fieldFilter, CounterService counterService) {
+    public SearchQueryController(Client client, ObjectMapper mapper, FieldFilter fieldFilter, MeterRegistry meterRegistry) {
         this.client = client;
         this.mapper = mapper;
         this.fieldFilter = fieldFilter;
-        this.counterService = counterService;
+        documentGetCallsCounter = meterRegistry.counter("counter.calls.document.get");
     }
 
     @GetMapping(value = "/document", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -51,20 +53,21 @@ public class SearchQueryController {
                            @RequestParam(required = false) String sort,
                            HttpServletResponse response) throws IOException {
 
-        counterService.increment("counter.calls.document.get");
+        documentGetCallsCounter.increment();
         if (!isRequestValid(fields, sort)) {
             LOG.info("Received search query with invalid parameters, fields: {}, sort: {}", fields, sort);
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             return null;
         }
 
-        final SearchRequestBuilder searchRequest = client.prepareSearch("steckbrief")
+        SearchRequestBuilder searchRequest = client.prepareSearch("steckbrief")
                 .setTypes("steckbrief")
                 .setScroll(new TimeValue(60000))
                 .setSize(100);
 
         if (StringUtils.isNotBlank(query)) {
-            searchRequest.setQuery(query);
+            String jsonQuery = URLDecoder.decode(query, "UTF-8");
+            searchRequest.setQuery(QueryBuilders.wrapperQuery(jsonQuery));
         }
         else {
             searchRequest.setQuery(QueryBuilders.matchAllQuery());
@@ -74,12 +77,12 @@ public class SearchQueryController {
             String[] sortPairs = sort.split(",");
             for (String sortPair : sortPairs) {
                 String[] sortPairConfig = sortPair.split(":");
-                searchRequest.addSort(sortPairConfig[0], "asc".equalsIgnoreCase(sortPairConfig[1]) ? SortOrder.ASC : SortOrder.DESC);
+                searchRequest.addSort(sortPairConfig[0] + ".keyword", "asc".equalsIgnoreCase(sortPairConfig[1]) ? SortOrder.ASC : SortOrder.DESC);
             }
         }
 
         try {
-            SearchResponse searchResponse = searchRequest.execute().actionGet();
+            SearchResponse searchResponse = searchRequest.get();
             List<String> filterForFields = new LinkedList<>();
             if (fields != null && fields.split(",").length > 0) {
                 filterForFields.addAll(Arrays.asList(fields.split(",")));
@@ -97,7 +100,7 @@ public class SearchQueryController {
                         searchResult.add(fieldFilter.filterFields(document, filterForFields));
                     }
                 }
-                searchResponse = client.prepareSearchScroll(searchResponse.getScrollId()).setScroll(new TimeValue(60000)).execute().actionGet();
+                searchResponse = client.prepareSearchScroll(searchResponse.getScrollId()).setScroll(new TimeValue(60000)).get();
                 if (searchResponse.getHits().getHits().length == 0) {
                     break;
                 }

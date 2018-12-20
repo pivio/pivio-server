@@ -4,18 +4,20 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.pivio.server.changeset.Changeset;
 import io.pivio.server.changeset.ChangesetService;
-import org.elasticsearch.action.deletebyquery.DeleteByQueryAction;
-import org.elasticsearch.action.deletebyquery.DeleteByQueryRequestBuilder;
+import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.reindex.DeleteByQueryAction;
 import org.joda.time.format.ISODateTimeFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.actuate.metrics.CounterService;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
@@ -28,6 +30,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 
+import static org.elasticsearch.rest.RestStatus.NOT_FOUND;
+
 @CrossOrigin
 @RestController
 @RequestMapping(value = "/document")
@@ -39,23 +43,26 @@ public class DocumentController {
     private final ChangesetService changesetService;
     private final ObjectMapper mapper;
     private final List<String> mandatoryFields;
+    private final Counter documentPostCallsCounter;
+    private final Counter documentIdGetCallsCounter;
+    private final Counter documentIdDeleteCallsCounter;
 
     @Autowired
     public ObjectMapper objectMapper;
 
-    private CounterService counterService;
-
-    public DocumentController(Client client, ChangesetService changesetService, ObjectMapper mapper, CounterService counterService) {
+    public DocumentController(Client client, ChangesetService changesetService, ObjectMapper mapper, MeterRegistry meterRegistry) {
         this.client = client;
         this.changesetService = changesetService;
         this.mapper = mapper;
-        this.counterService = counterService;
         mandatoryFields = Arrays.asList("id", "type", "name", "owner", "description");
+        documentPostCallsCounter = meterRegistry.counter("counter.calls.document.post");
+        documentIdGetCallsCounter = meterRegistry.counter("counter.calls.document.id.get");
+        documentIdDeleteCallsCounter = meterRegistry.counter("counter.calls.document.id.delete");
     }
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity create(@RequestBody ObjectNode document, UriComponentsBuilder uriBuilder) throws IOException {
-        counterService.increment("counter.calls.document.post");
+        documentPostCallsCounter.increment();
         if (isIdMissingOrEmpty(document)) {
             return ResponseEntity.badRequest().body(missingIdError(document));
         }
@@ -92,13 +99,13 @@ public class DocumentController {
         }
 
         client.prepareIndex("steckbrief", "steckbrief", documentId)
-                .setSource(document.toString())
+                .setSource(document.toString(), XContentType.JSON)
                 .execute()
                 .actionGet();
 
         if (changeset.isNotEmpty()) {
             client.prepareIndex("changeset", "changeset")
-                    .setSource(mapper.writeValueAsString(changeset))
+                    .setSource(mapper.writeValueAsString(changeset), XContentType.JSON)
                     .setCreate(true)
                     .execute()
                     .actionGet();
@@ -185,27 +192,24 @@ public class DocumentController {
         if (!getResponse.isExists()) {
             return ResponseEntity.notFound().build();
         }
-        counterService.increment("counter.calls.document.id.get");
+        documentIdGetCallsCounter.increment();
         return ResponseEntity.ok(mapper.readTree(getResponse.getSourceAsString()));
     }
 
     @DeleteMapping(value = "/{id}")
     public ResponseEntity delete(@PathVariable String id) throws IOException {
         LOG.info("Try to delete document {}", id);
-        counterService.increment("counter.calls.document.id.delete");
-        if (client.prepareDelete("steckbrief", "steckbrief", id).execute().actionGet().isFound()) {
-            new DeleteByQueryRequestBuilder(client, DeleteByQueryAction.INSTANCE)
-                    .setIndices("changeset")
-                    .setTypes("changeset")
-                    .setQuery(QueryBuilders.matchQuery("document", id))
-                    .execute()
-                    .actionGet();
-            LOG.info("Deleted document {} successfully", id);
-            return ResponseEntity.noContent().build();
-        }
-        else {
+        documentIdDeleteCallsCounter.increment();
+        DeleteResponse deleteResponse = client.prepareDelete("steckbrief", "steckbrief", id).get();
+        if (deleteResponse.status() == NOT_FOUND) {
             LOG.warn("Could not delete document {}", id);
             return ResponseEntity.notFound().build();
         }
+        DeleteByQueryAction.INSTANCE.newRequestBuilder(client)
+                .filter(QueryBuilders.matchQuery("document", id))
+                .source("changeset")
+                .get();
+        LOG.info("Deleted document {} successfully", id);
+        return ResponseEntity.noContent().build();
     }
 }

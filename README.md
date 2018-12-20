@@ -10,10 +10,9 @@
 ## How to run the server (without using Docker)
 
 1. Build pivio-server: `./gradlew build -x test` (Note: If you want to run the tests, you need [Docker](https://docs.docker.com/engine/installation/))
-2. Install [Elasticsearch 2.4.6](https://www.elastic.co/guide/en/elasticsearch/reference/2.4/_installation.html)
-3. Install the Elasticsearch [Delete By Query Plugin](https://www.elastic.co/guide/en/elasticsearch/plugins/2.4/plugins-delete-by-query.html)
+2. Install [Elasticsearch 6.4.3](https://www.elastic.co/guide/en/elasticsearch/reference/6.4/_installation.html)
 3. Start Elasticsearch: `elasticsearch`
-4. Start pivio-server: `java -jar build/libs/pivio-server-1.1.0.jar`
+4. Start pivio-server: `java -jar build/libs/pivio-server-1.2.0.jar`
 5. Access it at `http://localhost:9123/{document|changeset}` (see below)
 
 ## How to run the server using Docker (Compose)
@@ -96,7 +95,7 @@ That is, at least the following JSON characters need to be replaced:
 ### Search for each document of owner Lambda
 
 ```bash
-curl -H 'Content-Type: application/json' -X GET 'http://localhost:9123/document?query={"match":{"owner":"lambda"}}&fields=talks_to'
+curl -H 'Content-Type: application/json' -X GET 'http://localhost:9123/document?query={"match":{"owner":"lambda"}}'
 ```
 
 Encoded:

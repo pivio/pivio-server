@@ -1,5 +1,7 @@
 package io.pivio.server.changeset;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.pivio.server.elasticsearch.ElasticsearchQueryHelper;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.unit.TimeValue;
@@ -10,7 +12,6 @@ import org.joda.time.DateTime;
 import org.joda.time.format.ISODateTimeFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.actuate.metrics.CounterService;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -25,17 +26,19 @@ public class ChangesetController {
 
     private final Client client;
     private final ElasticsearchQueryHelper queryHelper;
-    private final CounterService counterService;
+    private final Counter changesetGetCallsCounter;
+    private final Counter documentIdChangesetGetCallsCounter;
 
-    public ChangesetController(Client client, ElasticsearchQueryHelper queryHelper, CounterService counterService) {
+    public ChangesetController(Client client, ElasticsearchQueryHelper queryHelper, MeterRegistry meterRegistry) {
         this.client = client;
         this.queryHelper = queryHelper;
-        this.counterService = counterService;
+        changesetGetCallsCounter = meterRegistry.counter("counter.calls.changeset.get");
+        documentIdChangesetGetCallsCounter = meterRegistry.counter("counter.calls.document.id.changeset.get");
     }
 
     @GetMapping(value = "/changeset", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity listAll(@RequestParam(required = false) String since) throws IOException {
-        counterService.increment("counter.calls.changeset.get");
+        changesetGetCallsCounter.increment();
         if (!isSinceParameterValid(since)) {
             LOG.info("Received changeset request with invalid since parameter in {} for all documents", since);
             return ResponseEntity.badRequest().build();
@@ -52,7 +55,7 @@ public class ChangesetController {
 
     @GetMapping(value = "/document/{id}/changeset", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity get(@PathVariable String id, @RequestParam(required = false) String since) throws IOException {
-        counterService.increment("counter.calls.document.id.changeset.get");
+        documentIdChangesetGetCallsCounter.increment();
 
         if (!queryHelper.isDocumentPresent("steckbrief", "steckbrief", id)) {
             LOG.info("Client wants to retrieve changesets for missing document with id {}", id);

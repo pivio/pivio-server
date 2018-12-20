@@ -59,7 +59,7 @@ public class ChangesetService {
     }
 
     private Optional<JsonNode> getDocument(String id) throws IOException {
-        GetResponse response = client.prepareGet("steckbrief", "steckbrief", id).execute().actionGet();
+        GetResponse response = client.prepareGet("steckbrief", "steckbrief", id).get();
         if (response.isExists()) {
             return Optional.of(mapper.readTree(response.getSourceAsString()));
         }

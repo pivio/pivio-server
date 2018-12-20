@@ -4,6 +4,7 @@ import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Profile;
 import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
 import org.springframework.stereotype.Component;
 
@@ -11,6 +12,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 @Component
+@Profile("production")
 public class ElasticsearchConnectionAvailableChecker {
 
     private static final Logger log = LoggerFactory.getLogger(ElasticsearchConnectionAvailableChecker.class);
@@ -23,6 +25,7 @@ public class ElasticsearchConnectionAvailableChecker {
             throw new IllegalArgumentException("only Elasticsearch clients of type TransportClient are supported; client is instead of type '" + client.getClass() + "'");
         }
         transportClient = (TransportClient) client;
+        log.info("TransportClient ({}) uses following transport addresses: {}", transportClient, transportClient.transportAddresses());
     }
 
     public boolean isConnectionToElasticsearchAvailable() {
@@ -45,12 +48,12 @@ public class ElasticsearchConnectionAvailableChecker {
     }
 
     private void waitInSeconds(int secondsToWait) {
-        log.warn("No connection to Elasticsearch available. TransportClient tries to connect during the next {}s.", secondsToWait);
+        log.warn("No connection to Elasticsearch available. TransportClient ({}) tries to connect during the next {}s.", transportClient, secondsToWait);
         try {
             TimeUnit.SECONDS.sleep(secondsToWait);
         }
         catch (InterruptedException e) {
-            log.warn("Letting TransportClient try to connect to an Elasticsearch node within " + secondsToWait + "s has been interrupted", e);
+            log.warn("Trying to connect to an Elasticsearch node within " + secondsToWait + "s has been interrupted. TransportClient: " + transportClient, e);
         }
     }
 }
