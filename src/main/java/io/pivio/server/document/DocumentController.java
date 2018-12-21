@@ -76,9 +76,7 @@ public class DocumentController {
 
         final Changeset changeset = changesetService.computeNext(document);
         final String documentId = document.get("id").asText();
-        final GetResponse persistedPivioDocument = client.prepareGet("steckbrief", "steckbrief", documentId)
-                .execute()
-                .actionGet();
+        final GetResponse persistedPivioDocument = client.prepareGet("steckbrief", "steckbrief", documentId).get();
 
         final String formattedChangeTime = ISODateTimeFormat.dateTime().print(changeset.getTimestamp());
         if (persistedPivioDocument.isExists()) {
@@ -100,15 +98,13 @@ public class DocumentController {
 
         client.prepareIndex("steckbrief", "steckbrief", documentId)
                 .setSource(document.toString(), XContentType.JSON)
-                .execute()
-                .actionGet();
+                .get();
 
         if (changeset.isNotEmpty()) {
             client.prepareIndex("changeset", "changeset")
                     .setSource(mapper.writeValueAsString(changeset), XContentType.JSON)
                     .setCreate(true)
-                    .execute()
-                    .actionGet();
+                    .get();
         }
 
         LOG.info("Indexed document {} for {}", documentId, document.get("name").asText());
@@ -185,10 +181,7 @@ public class DocumentController {
 
     @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity get(@PathVariable String id) throws IOException {
-        GetResponse getResponse = client.prepareGet("steckbrief", "steckbrief", id)
-                .execute()
-                .actionGet();
-
+        GetResponse getResponse = client.prepareGet("steckbrief", "steckbrief", id).get();
         if (!getResponse.isExists()) {
             return ResponseEntity.notFound().build();
         }

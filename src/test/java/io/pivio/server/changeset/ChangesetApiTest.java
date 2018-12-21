@@ -328,8 +328,7 @@ public class ChangesetApiTest extends AbstractApiTestCase {
     private void persistDocumentWithoutCreatingChangeset(JsonNode document) throws JsonProcessingException {
         client.prepareIndex("steckbrief", "steckbrief", document.get("id").asText())
                 .setSource(document.toString(), XContentType.JSON)
-                .execute()
-                .actionGet();
+                .get();
         elasticsearchTemplate.refresh(PivioDocument.class);
     }
 
@@ -338,8 +337,7 @@ public class ChangesetApiTest extends AbstractApiTestCase {
             client.prepareIndex("changeset", "changeset")
                     .setSource(objectMapper.writeValueAsString(changeset), XContentType.JSON)
                     // .setCreate(true)
-                    .execute()
-                    .actionGet();
+                    .get();
         }
         elasticsearchTemplate.refresh(Changeset.class);
     }

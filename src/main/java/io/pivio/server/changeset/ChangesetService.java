@@ -72,8 +72,7 @@ public class ChangesetService {
         SearchResponse searchResponse = client.prepareSearch("changeset").setTypes("changeset")
                 .setQuery(QueryBuilders.matchQuery("document", documentId))
                 .addSort("order", SortOrder.DESC)
-                .execute()
-                .actionGet();
+                .get();
         if (searchResponse.getHits().getTotalHits() > 0) {
             return Optional.of(mapper.readTree(searchResponse.getHits().getAt(0).getSourceAsString()));
         }
