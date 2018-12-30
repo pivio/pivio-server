@@ -17,7 +17,6 @@ import org.elasticsearch.index.reindex.DeleteByQueryAction;
 import org.joda.time.format.ISODateTimeFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
@@ -25,10 +24,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 import static org.elasticsearch.rest.RestStatus.NOT_FOUND;
 
@@ -37,24 +33,20 @@ import static org.elasticsearch.rest.RestStatus.NOT_FOUND;
 @RequestMapping(value = "/document")
 public class DocumentController {
 
+    private static final List<String> MANDATORY_FIELDS = Collections.unmodifiableList(Arrays.asList("id", "type", "name", "owner", "description"));
     private static final Logger LOG = LoggerFactory.getLogger(DocumentController.class);
 
     private final Client client;
     private final ChangesetService changesetService;
     private final ObjectMapper mapper;
-    private final List<String> mandatoryFields;
     private final Counter documentPostCallsCounter;
     private final Counter documentIdGetCallsCounter;
     private final Counter documentIdDeleteCallsCounter;
-
-    @Autowired
-    public ObjectMapper objectMapper;
 
     public DocumentController(Client client, ChangesetService changesetService, ObjectMapper mapper, MeterRegistry meterRegistry) {
         this.client = client;
         this.changesetService = changesetService;
         this.mapper = mapper;
-        mandatoryFields = Arrays.asList("id", "type", "name", "owner", "description");
         documentPostCallsCounter = meterRegistry.counter("counter.calls.document.post");
         documentIdGetCallsCounter = meterRegistry.counter("counter.calls.document.id.get");
         documentIdDeleteCallsCounter = meterRegistry.counter("counter.calls.document.id.delete");
@@ -72,7 +64,6 @@ public class DocumentController {
         }
 
         removeNullNodes(document);
-
 
         final Changeset changeset = changesetService.computeNext(document);
         final String documentId = document.get("id").asText();
@@ -103,7 +94,6 @@ public class DocumentController {
         if (changeset.isNotEmpty()) {
             client.prepareIndex("changeset", "changeset")
                     .setSource(mapper.writeValueAsString(changeset), XContentType.JSON)
-                    .setCreate(true)
                     .get();
         }
 
@@ -162,7 +152,7 @@ public class DocumentController {
     }
 
     private String getMissingMandatoryField(JsonNode document) {
-        for (String field : mandatoryFields) {
+        for (String field : MANDATORY_FIELDS) {
             if (!document.has(field)) {
                 return field;
             }
@@ -171,7 +161,7 @@ public class DocumentController {
     }
 
     private String getEmptyMandatoryField(JsonNode document) {
-        for (String field : mandatoryFields) {
+        for (String field : MANDATORY_FIELDS) {
             if (document.has(field) && StringUtils.isEmpty(document.get(field).asText(""))) {
                 return field;
             }

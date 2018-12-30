@@ -336,7 +336,6 @@ public class ChangesetApiTest extends AbstractApiTestCase {
         for (Changeset changeset : changesets) {
             client.prepareIndex("changeset", "changeset")
                     .setSource(objectMapper.writeValueAsString(changeset), XContentType.JSON)
-                    // .setCreate(true)
                     .get();
         }
         elasticsearchTemplate.refresh(Changeset.class);
