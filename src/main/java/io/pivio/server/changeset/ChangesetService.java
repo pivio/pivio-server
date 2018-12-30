@@ -20,18 +20,19 @@ import java.util.Set;
 @Component
 public class ChangesetService {
 
+    private static final Set<String> EXCLUDED_FIELDS = new HashSet<>();
+    static {
+        EXCLUDED_FIELDS.add("/created");
+        EXCLUDED_FIELDS.add("/lastUpload");
+        EXCLUDED_FIELDS.add("/lastUpdate");
+    }
+
     private final Client client;
     private final ObjectMapper mapper;
-    private final Set<String> excludedFields;
 
     public ChangesetService(Client client, ObjectMapper mapper) {
         this.client = client;
         this.mapper = mapper;
-
-        excludedFields = new HashSet<>();
-        excludedFields.add("/created");
-        excludedFields.add("/lastUpload");
-        excludedFields.add("/lastUpdate");
     }
 
     public Changeset computeNext(JsonNode document) throws IOException {
@@ -41,16 +42,12 @@ public class ChangesetService {
         return new Changeset(documentId, retrieveLastOrderNumber(documentId) + 1L, filterExcludedFields(patch));
     }
 
-    private ArrayNode filterExcludedFields(JsonNode json) {
-        ArrayNode filteredJson = mapper.createArrayNode();
-        Iterator<JsonNode> elements = json.elements();
-        while (elements.hasNext()) {
-            JsonNode current = elements.next();
-            if (current.has("path") && !excludedFields.contains(current.get("path").textValue())) {
-                filteredJson.add(current);
-            }
+    private Optional<JsonNode> getDocument(String id) throws IOException {
+        GetResponse response = client.prepareGet("steckbrief", "steckbrief", id).get();
+        if (!response.isExists()) {
+            return Optional.empty();
         }
-        return filteredJson;
+        return Optional.of(mapper.readTree(response.getSourceAsString()));
     }
 
     private long retrieveLastOrderNumber(String documentId) throws IOException {
@@ -58,26 +55,26 @@ public class ChangesetService {
         return lastChangeset.map(c -> c.get("order").longValue()).orElse(0L);
     }
 
-    private Optional<JsonNode> getDocument(String id) throws IOException {
-        GetResponse response = client.prepareGet("steckbrief", "steckbrief", id).get();
-        if (response.isExists()) {
-            return Optional.of(mapper.readTree(response.getSourceAsString()));
-        }
-        else {
-            return Optional.empty();
-        }
-    }
-
     private Optional<JsonNode> getLastChangeset(String documentId) throws IOException {
         SearchResponse searchResponse = client.prepareSearch("changeset").setTypes("changeset")
                 .setQuery(QueryBuilders.matchQuery("document", documentId))
                 .addSort("order", SortOrder.DESC)
                 .get();
-        if (searchResponse.getHits().getTotalHits() > 0) {
-            return Optional.of(mapper.readTree(searchResponse.getHits().getAt(0).getSourceAsString()));
-        }
-        else {
+        if (searchResponse.getHits().getTotalHits() == 0) {
             return Optional.empty();
         }
+        return Optional.of(mapper.readTree(searchResponse.getHits().getAt(0).getSourceAsString()));
+    }
+
+    private ArrayNode filterExcludedFields(JsonNode json) {
+        ArrayNode filteredJson = mapper.createArrayNode();
+        Iterator<JsonNode> elements = json.elements();
+        while (elements.hasNext()) {
+            JsonNode current = elements.next();
+            if (current.has("path") && !EXCLUDED_FIELDS.contains(current.get("path").textValue())) {
+                filteredJson.add(current);
+            }
+        }
+        return filteredJson;
     }
 }
