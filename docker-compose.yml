@@ -4,7 +4,7 @@ services:
   pivio:
     build: .
     ports:
-     - "9123:9123"
+      - "9123:9123"
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:6.4.3
