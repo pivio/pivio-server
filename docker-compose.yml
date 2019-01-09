@@ -11,6 +11,7 @@ services:
     environment:
       - bootstrap.memory_lock=true
       - cluster.name=elasticsearch
+      - Des.scripting.exception_for_missing_value=true
       - discovery.type=single-node
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
       - "xpack.security.enabled=false"
@@ -18,3 +19,7 @@ services:
       memlock:
         soft: -1
         hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+      nproc: 65535
