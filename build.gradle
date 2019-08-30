@@ -8,7 +8,7 @@ buildscript {
 }
 
 plugins {
-    id 'com.github.ben-manes.versions' version '0.17.0'
+    id 'com.github.ben-manes.versions' version '0.23.0'
     id 'com.github.hierynomus.license' version '0.14.0'
     id 'jacoco'
     id 'java'
