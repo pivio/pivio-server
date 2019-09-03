@@ -44,7 +44,7 @@ dependencies {
     compile 'org.springframework.boot:spring-boot-starter-web'
 
     testCompile 'com.jayway.jsonpath:json-path'
-    testCompile 'org.apache.commons:commons-text:1.2'
+    testCompile 'org.apache.commons:commons-text:1.8'
     testCompile 'org.assertj:assertj-core:3.9.0'
     testCompile 'org.awaitility:awaitility:3.0.0'
     testCompile 'org.springframework.boot:spring-boot-starter-test'
