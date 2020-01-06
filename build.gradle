@@ -46,7 +46,7 @@ dependencies {
     testCompile 'com.jayway.jsonpath:json-path'
     testCompile 'org.apache.commons:commons-text:1.2'
     testCompile 'org.assertj:assertj-core:3.9.0'
-    testCompile 'org.awaitility:awaitility:3.0.0'
+    testCompile 'org.awaitility:awaitility:4.0.2'
     testCompile 'org.springframework.boot:spring-boot-starter-test'
     testCompile 'org.testcontainers:testcontainers:1.5.1'
 }
