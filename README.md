@@ -29,6 +29,13 @@ If you need to rebuild the Docker images (e.g. when you patched the sources) run
 docker-compose up [-d] --build
 ```
 
+## How to run only Elasticsearch during development 
+
+1. Make sure [Docker](https://docs.docker.com/engine/installation/) is running and you have [Docker Compose](https://docs.docker.com/compose/install/) installed
+2. Start it, using `bin/elasticsearch-start.sh`
+
+The container can be stopped via `bin/elasticsearch-stop.sh`. 
+
 ## Insert document information
 
 ```bash
