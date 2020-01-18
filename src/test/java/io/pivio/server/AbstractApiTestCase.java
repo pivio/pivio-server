@@ -26,7 +26,7 @@ import static org.awaitility.Awaitility.await;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
-@ContextConfiguration(initializers = DockerEnvironmentInitializer.class)
+// todo @ContextConfiguration(initializers = DockerEnvironmentInitializer.class)
 public abstract class AbstractApiTestCase {
 
     protected static final String PIVIO_SERVER_BASE_URL = "http://localhost:9123";

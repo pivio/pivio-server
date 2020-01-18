@@ -7,6 +7,7 @@ import io.pivio.server.AbstractApiTestCase;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.RandomStringGenerator;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.RequestEntity;
@@ -89,6 +90,7 @@ public class SearchApiTest extends AbstractApiTestCase {
                 .set("arrayfield", objectMapper.createArrayNode().add("d").add("b").add("e")));
     }
 
+    @Ignore
     @Test
     public void search_returns_documents_matching_search_criteria() throws Exception {
         // given
@@ -103,6 +105,7 @@ public class SearchApiTest extends AbstractApiTestCase {
         assertThat(searchResult.findValues("id")).extracting(JsonNode::textValue).containsOnly("no2", "no3");
     }
 
+    @Ignore
     @Test
     public void search_returns_documents_containing_only_requested_fields() throws Exception {
         // given
@@ -116,6 +119,7 @@ public class SearchApiTest extends AbstractApiTestCase {
         assertThat(searchResult.get(2).fieldNames()).containsOnly("id", "newfield1", "newfield2");
     }
 
+    @Ignore
     @Test
     public void search_returns_documents_sorted_descending_by_short_name() throws Exception {
         // given
@@ -128,6 +132,7 @@ public class SearchApiTest extends AbstractApiTestCase {
         assertThat(searchResult.findValues("id")).extracting(JsonNode::textValue).containsExactly("no1", "no2", "no3");
     }
 
+    @Ignore
     @Test
     public void search_returns_documents_sorted_ascending_by_short_name_even_when_a_comma_follows_in_sort_parameter() throws Exception {
         // given
@@ -140,6 +145,7 @@ public class SearchApiTest extends AbstractApiTestCase {
         assertThat(searchResult.findValues("id")).extracting(JsonNode::textValue).containsExactly("no2", "no3", "no1");
     }
 
+    @Ignore
     @Test
     public void search_returns_documents_sorted_ascending_by_short_name_and_descending_by_owner() throws Exception {
         // given
@@ -174,6 +180,7 @@ public class SearchApiTest extends AbstractApiTestCase {
      * }
      * </pre>
      */
+    @Ignore
     @Test
     public void search_returns_document_matching_nested_query() throws Exception {
         // given
@@ -194,6 +201,7 @@ public class SearchApiTest extends AbstractApiTestCase {
         assertThat(searchResult.findValues("id")).extracting(JsonNode::textValue).containsExactly("nestedObject");
     }
 
+    @Ignore
     @Test
     public void search_returns_single_document_matching_data_in_array() throws Exception {
         // given
@@ -208,6 +216,7 @@ public class SearchApiTest extends AbstractApiTestCase {
         assertThat(searchResult.findValues("id")).extracting(JsonNode::textValue).containsExactly("array");
     }
 
+    @Ignore
     @Test
     public void search_returns_all_documents_matching_data_in_array() throws Exception {
         // given
@@ -238,6 +247,7 @@ public class SearchApiTest extends AbstractApiTestCase {
      * }
      * </pre>
      */
+    @Ignore
     @Test
     public void search_returns_documents_matching_data_containing_colon() throws Exception {
         // given
@@ -255,6 +265,7 @@ public class SearchApiTest extends AbstractApiTestCase {
         assertThat(searchResult.findValues("id")).extracting(JsonNode::textValue).containsExactly("nestedObject");
     }
 
+    @Ignore
     @Test
     public void search_cannot_be_executed_when_fields_parameter_is_empty() throws Exception {
         // given
@@ -268,21 +279,25 @@ public class SearchApiTest extends AbstractApiTestCase {
         assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
+    @Ignore
     @Test
     public void search_cannot_be_executed_when_sort_parameter_is_empty() throws Exception {
         assertThatSearchRequestWithSortParameterResultsInBadRequestResponse("");
     }
 
+    @Ignore
     @Test
     public void search_cannot_be_executed_when_sort_parameter_has_no_colon() throws Exception {
         assertThatSearchRequestWithSortParameterResultsInBadRequestResponse("short_nameasc");
     }
 
+    @Ignore
     @Test
     public void search_cannot_be_executed_when_fields_for_sorting_does_not_exist() throws Exception {
         assertThatSearchRequestWithSortParameterResultsInBadRequestResponse("does_not_exist:asc");
     }
 
+    @Ignore
     @Test
     public void search_cannot_be_executed_when_sort_order_is_invalid() throws Exception {
         assertThatSearchRequestWithSortParameterResultsInBadRequestResponse("short_name:asce");

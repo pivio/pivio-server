@@ -1,6 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 SCRIPT_DIRECTORY=$(cd `dirname $0` && pwd)
+BASE_DIRECTORY=$(cd `dirname $0`/.. && pwd)
 
 source ${SCRIPT_DIRECTORY}/library.sh
 
@@ -12,14 +13,14 @@ echo "${GREEN}About to run Elasticsearch via Docker ${RST}"
 
 import_gradle_properties
 
-if [[ -n "$(set -x; docker images -q elasticsearch:${dep_elasticsearch} 2>/dev/null)" ]]
+if [[ -n "$(set -x; docker images -q elasticsearch:${DEP_ELASTICSEARCH} 2>/dev/null)" ]]
 then
-    echo "${GREEN}Docker image elasticsearch:${dep_elasticsearch} exists locally${RST}"
+    echo "${GREEN}Docker image elasticsearch:${DEP_ELASTICSEARCH} exists locally${RST}"
 else
-    echo "${RED}Docker image elasticsearch:${dep_elasticsearch} does not exist locally${RST}"
-    echo "${RED}Going to pull image elasticsearch:${dep_elasticsearch} from Docker Hub${RST}"
+    echo "${RED}Docker image elasticsearch:${DEP_ELASTICSEARCH} does not exist locally${RST}"
+    echo "${RED}Going to pull image elasticsearch:${DEP_ELASTICSEARCH} from Docker Hub${RST}"
 
-    if [[ $(set -x; docker pull elasticsearch:${dep_elasticsearch}) ]]
+    if [[ $(set -x; docker pull elasticsearch:${DEP_ELASTICSEARCH}) ]]
     then
         echo "${GREEN}Pulled Docker image sucessfully${RST}"
     else
@@ -30,40 +31,42 @@ fi
 
 # Create container if it does not exit
 
-if [[ $(docker container ls -a --filter "name=^${conf_elasticsearch_dockerimage}$" --format "{{.Names}}") == "${conf_elasticsearch_dockerimage}" ]]; then
-    echo "${GREEN}Container ${conf_elasticsearch_dockerimage} already exists. Will reuse it${RESET}"
+if [[ $(docker container ls -a --filter "name=^${CONF_ELASTICSEARCH_DOCKERIMAGE}$" --format "{{.Names}}") == "${CONF_ELASTICSEARCH_DOCKERIMAGE}" ]]; then
+    echo "${GREEN}Container ${CONF_ELASTICSEARCH_DOCKERIMAGE} already exists. Will reuse it${RESET}"
 else
-    echo "${RED}Container ${conf_elasticsearch_dockerimage} does not exist. Will create it now for you.${RST}"
+    echo "${RED}Container ${CONF_ELASTICSEARCH_DOCKERIMAGE} does not exist. Will create it now for you.${RST}"
 
     (
+           #--network pivio-dev-net \
         set -x;
         docker create \
            --publish 9200:9200 \
            --publish 9300:9300 \
-           --name ${conf_elasticsearch_dockerimage} \
-           elasticsearch:${dep_elasticsearch} || exit 1
+           --env "discovery.type=single-node" \
+           --name ${CONF_ELASTICSEARCH_DOCKERIMAGE} \
+           elasticsearch:${DEP_ELASTICSEARCH} || exit 1
     )
 
     if [[ $? -ne 0 ]]
     then
-        echo "${RED}Failed to create container ${conf_elasticsearch_dockerimage}${RST}"
+        echo "${RED}Failed to create container ${CONF_ELASTICSEARCH_DOCKERIMAGE}${RST}"
         exit 1
     fi
 fi
 
 # Ok, let us start the container
 
-if [[ ! $(docker ps  -a --filter "name=^${conf_elasticsearch_dockerimage}$" --filter status=running --format "{{.Names}}") == "${conf_elasticsearch_dockerimage}" ]]; then
-    echo "${GREEN}Container ${conf_elasticsearch_dockerimage} is not running. Will start the container now${RST}"
+if [[ ! $(docker ps  -a --filter "name=^${CONF_ELASTICSEARCH_DOCKERIMAGE}$" --filter status=running --format "{{.Names}}") == "${CONF_ELASTICSEARCH_DOCKERIMAGE}" ]]; then
+    echo "${GREEN}Container ${CONF_ELASTICSEARCH_DOCKERIMAGE} is not running. Will start the container now${RST}"
 
     (
         set -x;
-        docker start ${conf_elasticsearch_dockerimage} 1>&- || exit 1
+        docker start ${CONF_ELASTICSEARCH_DOCKERIMAGE} 1>&- || exit 1
     )
 
     if [[ $? -ne 0 ]]
     then
-        echo "${RED}Failed to start the container ${conf_elasticsearch_dockerimage} properly${RST}"
+        echo "${RED}Failed to start the container ${CONF_ELASTICSEARCH_DOCKERIMAGE} properly${RST}"
     fi
 
 else

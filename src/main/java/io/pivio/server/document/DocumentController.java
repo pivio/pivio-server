@@ -6,8 +6,6 @@ import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.pivio.server.changeset.Changeset;
 import io.pivio.server.changeset.ChangesetService;
-import org.elasticsearch.action.deletebyquery.DeleteByQueryAction;
-import org.elasticsearch.action.deletebyquery.DeleteByQueryRequestBuilder;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -191,6 +189,9 @@ public class DocumentController {
 
     @DeleteMapping(value = "/{id}")
     public ResponseEntity delete(@PathVariable String id) throws IOException {
+        /*
+            Todo
+
         LOG.info("Try to delete document {}", id);
         counterService.increment("counter.calls.document.id.delete");
         if (client.prepareDelete("steckbrief", "steckbrief", id).execute().actionGet().isFound()) {
@@ -204,8 +205,10 @@ public class DocumentController {
             return ResponseEntity.noContent().build();
         }
         else {
+                 */
+
             LOG.warn("Could not delete document {}", id);
             return ResponseEntity.notFound().build();
-        }
+        //}
     }
 }

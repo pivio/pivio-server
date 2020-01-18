@@ -3,6 +3,7 @@ package io.pivio.server.document;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.pivio.server.AbstractApiTestCase;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +18,7 @@ import static org.springframework.http.HttpStatus.CREATED;
 
 public class DocumentApiTest extends AbstractApiTestCase {
 
+    @Ignore
     @Test
     public void document_can_be_created() throws Exception {
         // given
@@ -30,6 +32,7 @@ public class DocumentApiTest extends AbstractApiTestCase {
         assertThat(responseEntity.getHeaders().getLocation()).isEqualTo(URI.create("http://localhost:9123/document/" + SOME_ID));
     }
 
+    @Ignore
     @Test
     public void document_with_big_id_can_be_created() throws Exception {
         // given
@@ -43,6 +46,7 @@ public class DocumentApiTest extends AbstractApiTestCase {
         assertThat(responseEntity.getStatusCode()).isEqualTo(CREATED);
     }
 
+    @Ignore
     @Test
     public void document_with_empty_id_is_rejected() throws Exception {
         // given
@@ -57,6 +61,7 @@ public class DocumentApiTest extends AbstractApiTestCase {
         assertThat(responseEntity.getBody().getId()).isNotEmpty();
     }
 
+    @Ignore
     @Test
     public void document_without_id_is_rejected() throws Exception {
         // given
@@ -75,6 +80,7 @@ public class DocumentApiTest extends AbstractApiTestCase {
         assertThat(responseEntity.getBody().getId()).isNotEmpty();
     }
 
+    @Ignore
     @Test
     public void document_with_empty_mandatory_field_is_rejected() throws Exception {
         // given
@@ -88,6 +94,7 @@ public class DocumentApiTest extends AbstractApiTestCase {
         assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
+    @Ignore
     @Test
     public void responds_with_meaningful_error_message_when_document_has_empty_mandatory_field() throws Exception {
         // given
@@ -101,6 +108,7 @@ public class DocumentApiTest extends AbstractApiTestCase {
         assertThat(responseEntity.getBody().get("error").asText()).isEqualToIgnoringCase("mandatory field 'name' is empty");
     }
 
+    @Ignore
     @Test
     public void document_with_missing_mandatory_field_is_rejected() throws Exception {
         // given
@@ -113,6 +121,7 @@ public class DocumentApiTest extends AbstractApiTestCase {
         assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
+    @Ignore
     @Test
     public void responds_with_meaningful_error_message_when_document_has_missng_mandatory_field() throws Exception {
         // given
@@ -125,6 +134,7 @@ public class DocumentApiTest extends AbstractApiTestCase {
         assertThat(responseEntity.getBody().get("error").asText()).isEqualToIgnoringCase("mandatory field 'type' is missing");
     }
 
+    @Ignore
     @Test
     public void existent_document_can_be_requested() throws Exception {
         // given
@@ -138,6 +148,7 @@ public class DocumentApiTest extends AbstractApiTestCase {
         assertThat(responseEntity.getBody().get("id").asText()).isEqualTo(SOME_ID);
     }
 
+    @Ignore
     @Test
     public void existent_documents_can_be_requested() throws Exception {
         // given
@@ -152,6 +163,7 @@ public class DocumentApiTest extends AbstractApiTestCase {
         assertThat(toList(responseEntity.getBody())).hasSize(2);
     }
 
+    @Ignore
     @Test
     public void non_existent_document_cannot_be_requested() throws Exception {
         // when
@@ -161,6 +173,7 @@ public class DocumentApiTest extends AbstractApiTestCase {
         assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 
+    @Ignore
     @Test
     public void created_field_is_added_to_document() throws Exception {
         // given
@@ -173,6 +186,7 @@ public class DocumentApiTest extends AbstractApiTestCase {
         assertThat(responseEntity.getBody().has("created")).isTrue();
     }
 
+    @Ignore
     @Test
     public void lastUpdate_field_is_added_to_document() throws Exception {
         // given
@@ -185,6 +199,7 @@ public class DocumentApiTest extends AbstractApiTestCase {
         assertThat(responseEntity.getBody().has("lastUpdate")).isTrue();
     }
 
+    @Ignore
     @Test
     public void lastUpload_field_is_added_to_document() throws Exception {
         // given
@@ -197,6 +212,7 @@ public class DocumentApiTest extends AbstractApiTestCase {
         assertThat(responseEntity.getBody().has("lastUpload")).isTrue();
     }
 
+    @Ignore
     @Test
     public void created_lastUpdate_and_lastUpload_fields_are_identical_for_a_new_document() throws Exception {
         // given
@@ -210,6 +226,7 @@ public class DocumentApiTest extends AbstractApiTestCase {
         assertThat(responseEntity.getBody().get("lastUpload").textValue()).isEqualTo(responseEntity.getBody().get("lastUpdate").textValue());
     }
 
+    @Ignore
     @Test
     public void lastUpdate_field_is_changed_when_document_has_changed() throws Exception {
         // given
@@ -233,6 +250,7 @@ public class DocumentApiTest extends AbstractApiTestCase {
         assertThat(secondLastUpload).isNotEqualTo(firstLastUpload);
     }
 
+    @Ignore
     @Test
     public void lastUpload_field_is_changed_when_the_same_document_is_resent() throws Exception {
         // given
@@ -255,6 +273,7 @@ public class DocumentApiTest extends AbstractApiTestCase {
         assertThat(secondLastUpload).isNotEqualTo(firstLastUpload);
     }
 
+    @Ignore
     @Test
     public void document_can_be_deleted() throws Exception {
         // given

@@ -1,0 +1,27 @@
+version: "3.7"
+services:
+  elasticsearch:
+    image: elasticsearch:${DEP_ELASTICSEARCH:?Please run docker-compose via ./dcw ...}
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+    networks:
+      - devnet
+    ports:
+      - 9200:9200
+      - 9300:9300
+
+  elastichq:
+    #image: elastichq/elasticsearch-hq:${}release-v3.5.12
+    image: elastichq/elasticsearch-hq:${DEP_ELASTICHQ:?Please run docker-compose via ./dcw ...}
+    container_name: elastichq
+    networks:
+      - devnet
+    ports:
+      - 5000:5000
+
+networks:
+  devnet:
+    name: pivio-dev-net
+    driver: bridge
+

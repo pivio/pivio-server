@@ -8,12 +8,13 @@ function import_gradle_properties() {
             if [[ "$key" =~ [^[:space:]] ]]
             then
                 key=$(echo $key | tr '.' '_')
-                eval "$key=\"$value\""
+                eval "${key^^}=\"$value\""
             fi
 
         done < ${PROPERTIES}
 
-        echo "${GREEN}Used Elasticsearch version is ${dep_elasticsearch}${RST}"
+        echo "${GREEN}Used Elasticsearch version is ${DEP_ELASTICSEARCH}${RST}"
+        echo "${GREEN}Used Elasticsearch version is ${DEP_ELASTICHQ}${RST}"
     else
         echo "${RED}Properties file not found${RST}"
         exit 1

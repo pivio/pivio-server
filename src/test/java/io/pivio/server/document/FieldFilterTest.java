@@ -2,6 +2,7 @@ package io.pivio.server.document;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -10,6 +11,7 @@ import static org.assertj.core.api.Assertions.*;
 
 public class FieldFilterTest {
 
+    @Ignore
     @Test
     public void testFilterFields() throws Exception {
         ObjectMapper mapper = new ObjectMapper();

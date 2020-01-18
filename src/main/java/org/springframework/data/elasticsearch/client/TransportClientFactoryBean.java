@@ -18,7 +18,6 @@ package org.springframework.data.elasticsearch.client;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
-import org.elasticsearch.plugin.deletebyquery.DeleteByQueryPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
@@ -98,6 +97,7 @@ public class TransportClientFactoryBean implements FactoryBean<TransportClient>,
 
     protected void buildClient() throws Exception {
         logger.warn("Shadowing {} to create a TransportClient with the DeleteByQueryPlugin", TransportClientFactoryBean.class);
+        /*
         client = TransportClient.builder().addPlugin(DeleteByQueryPlugin.class).settings(settings()).build();
         Assert.hasText(clusterNodes, "[Assertion failed] clusterNodes settings missing.");
         for (String clusterNode : split(clusterNodes, COMMA)) {
@@ -109,6 +109,7 @@ public class TransportClientFactoryBean implements FactoryBean<TransportClient>,
             client.addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(hostName), Integer.valueOf(port)));
         }
         client.connectedNodes();
+         */
     }
 
     private Settings settings() {

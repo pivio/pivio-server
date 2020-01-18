@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-@Component
+// todo @Component
 public class ElasticsearchConnectionAvailableChecker {
 
     private static final Logger log = LoggerFactory.getLogger(ElasticsearchConnectionAvailableChecker.class);
