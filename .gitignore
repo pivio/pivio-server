@@ -14,3 +14,6 @@ build/
 data/
 
 .DS_Store
+
+# Ignore config file for jenv
+.java-version
