@@ -2,7 +2,7 @@ package io.pivio.server;
 
 import org.assertj.core.util.Files;
 import org.junit.runner.Description;
-import org.springframework.boot.test.util.EnvironmentTestUtils;
+import org.springframework.boot.test.util.TestPropertyValues;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.testcontainers.containers.DockerComposeContainer;
@@ -54,6 +54,7 @@ public class DockerEnvironmentInitializer implements ApplicationContextInitializ
 
     private void setSpringDataElasticsearchClusterNodesProperty(ConfigurableApplicationContext applicationContext, DockerComposeContainer dockerEnvironment) {
         Integer elasticsearchAmbassadorPort = dockerEnvironment.getServicePort(ELASTICSEARCH_SERVICE_NAME, ELASTICSEARCH_SERVICE_PORT);
-        EnvironmentTestUtils.addEnvironment(applicationContext, "spring.data.elasticsearch.cluster-nodes=localhost:" + elasticsearchAmbassadorPort);
+        TestPropertyValues.of("spring.data.elasticsearch.cluster-nodes=localhost:" + elasticsearchAmbassadorPort)
+                          .applyTo(applicationContext);
     }
 }

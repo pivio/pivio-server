@@ -18,28 +18,29 @@ public class CreateIndexOnStartupListener implements ApplicationListener<Context
     private final Logger log = LoggerFactory.getLogger(CreateIndexOnStartupListener.class);
 
     private final ElasticsearchTemplate elasticsearchTemplate;
-    private final ElasticsearchConnectionAvailableChecker elasticsearchConnectionAvailableChecker;
+    // private final ElasticsearchConnectionAvailableChecker elasticsearchConnectionAvailableChecker;
 
-    public CreateIndexOnStartupListener(ElasticsearchTemplate elasticsearchTemplate, ElasticsearchConnectionAvailableChecker elasticsearchConnectionAvailableChecker) {
+    public CreateIndexOnStartupListener(ElasticsearchTemplate elasticsearchTemplate
+                                        /*, ElasticsearchConnectionAvailableChecker elasticsearchConnectionAvailableChecker*/) {
         this.elasticsearchTemplate = elasticsearchTemplate;
-        this.elasticsearchConnectionAvailableChecker = elasticsearchConnectionAvailableChecker;
+       // this.elasticsearchConnectionAvailableChecker = elasticsearchConnectionAvailableChecker;
     }
 
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
-        if (!elasticsearchConnectionAvailableChecker.isConnectionToElasticsearchAvailable()) {
-            throw createAndLogIllegalStateException("cannot create Elasticsearch indices and mappings for PivioDocument and Changeset as no connection to Elasticsearch is available");
-        }
+        // todo  if (!elasticsearchConnectionAvailableChecker.isConnectionToElasticsearchAvailable()) {
+        //   todo   throw createAndLogIllegalStateException("cannot create Elasticsearch indices and mappings for PivioDocument and Changeset as no connection to Elasticsearch is available");
+        //  todo }
 
         log.info("Creating index for documents");
-        elasticsearchTemplate.createIndex(PivioDocument.class);
-        elasticsearchTemplate.putMapping(PivioDocument.class);
-        elasticsearchTemplate.refresh(PivioDocument.class);
+        // todo elasticsearchTemplate.createIndex(PivioDocument.class);
+        // todo elasticsearchTemplate.putMapping(PivioDocument.class);
+        // todo elasticsearchTemplate.refresh(PivioDocument.class);
 
         log.info("Creating index for changesets");
-        elasticsearchTemplate.createIndex(Changeset.class);
-        elasticsearchTemplate.putMapping(Changeset.class);
-        elasticsearchTemplate.refresh(Changeset.class);
+        // todo elasticsearchTemplate.createIndex(Changeset.class);
+        // todo elasticsearchTemplate.putMapping(Changeset.class);
+        // todo elasticsearchTemplate.refresh(Changeset.class);
     }
 
     private RuntimeException createAndLogIllegalStateException(String message) {

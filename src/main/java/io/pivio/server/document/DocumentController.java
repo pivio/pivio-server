@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Metrics;
 import io.pivio.server.changeset.Changeset;
 import io.pivio.server.changeset.ChangesetService;
 import org.elasticsearch.action.get.GetResponse;
@@ -13,7 +15,6 @@ import org.joda.time.format.ISODateTimeFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.actuate.metrics.CounterService;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
@@ -41,19 +42,18 @@ public class DocumentController {
     @Autowired
     public ObjectMapper objectMapper;
 
-    private CounterService counterService;
+    private Counter counter = Metrics.counter("counter.calls.document.post");
 
-    public DocumentController(Client client, ChangesetService changesetService, ObjectMapper mapper, CounterService counterService) {
+    public DocumentController(Client client, ChangesetService changesetService, ObjectMapper mapper) {
         this.client = client;
         this.changesetService = changesetService;
         this.mapper = mapper;
-        this.counterService = counterService;
         mandatoryFields = Arrays.asList("id", "type", "name", "owner", "description");
     }
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity create(@RequestBody ObjectNode document, UriComponentsBuilder uriBuilder) throws IOException {
-        counterService.increment("counter.calls.document.post");
+        counter.increment();
         if (isIdMissingOrEmpty(document)) {
             return ResponseEntity.badRequest().body(missingIdError(document));
         }
@@ -183,7 +183,7 @@ public class DocumentController {
         if (!getResponse.isExists()) {
             return ResponseEntity.notFound().build();
         }
-        counterService.increment("counter.calls.document.id.get");
+        counter.increment();
         return ResponseEntity.ok(mapper.readTree(getResponse.getSourceAsString()));
     }
 

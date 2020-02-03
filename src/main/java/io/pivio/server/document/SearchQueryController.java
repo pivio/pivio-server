@@ -3,18 +3,20 @@ package io.pivio.server.document;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Metrics;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.actuate.metrics.CounterService;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -36,13 +38,12 @@ public class SearchQueryController {
     private final Client client;
     private final ObjectMapper mapper;
     private final FieldFilter fieldFilter;
-    private final CounterService counterService;
+    private final Counter counter = Metrics.counter("counter.calls.document.get");
 
-    public SearchQueryController(Client client, ObjectMapper mapper, FieldFilter fieldFilter, CounterService counterService) {
+    public SearchQueryController(Client client, ObjectMapper mapper, FieldFilter fieldFilter) {
         this.client = client;
         this.mapper = mapper;
         this.fieldFilter = fieldFilter;
-        this.counterService = counterService;
     }
 
     @GetMapping(value = "/document", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -51,7 +52,7 @@ public class SearchQueryController {
                            @RequestParam(required = false) String sort,
                            HttpServletResponse response) throws IOException {
 
-        counterService.increment("counter.calls.document.get");
+        counter.increment();
         if (!isRequestValid(fields, sort)) {
             LOG.info("Received search query with invalid parameters, fields: {}, sort: {}", fields, sort);
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
@@ -64,7 +65,8 @@ public class SearchQueryController {
                 .setSize(100);
 
         if (StringUtils.isNotBlank(query)) {
-            searchRequest.setQuery(query);
+            QueryBuilder queryBuilder = QueryBuilders.simpleQueryStringQuery(query);
+            searchRequest.setQuery(queryBuilder);
         }
         else {
             searchRequest.setQuery(QueryBuilders.matchAllQuery());
