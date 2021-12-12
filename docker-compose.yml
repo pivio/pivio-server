@@ -1,10 +1,11 @@
-pivio:
-  build: .
-  ports:
-   - "9123:9123"
-  links:
-   - elasticsearch
+services:
+  pivio:
+    build: .
+    ports:
+     - "9123:9123"
+    links:
+     - elasticsearch
 
-elasticsearch:
-  image: elasticsearch:2.4.6
-  command: ["/bin/sh", "-c", "if ! plugin list | grep -q delete-by-query; then plugin install delete-by-query; fi && gosu elasticsearch elasticsearch"]
+  elasticsearch:
+    image: elasticsearch:2.4.6
+    command: ["/bin/sh", "-c", "if ! plugin list | grep -q delete-by-query; then plugin install delete-by-query; fi && gosu elasticsearch elasticsearch"]
