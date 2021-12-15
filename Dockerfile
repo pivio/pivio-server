@@ -1,8 +1,6 @@
-FROM openjdk:8-jre-alpine
+FROM openjdk:11-jre-slim
 
 EXPOSE 8080
-
-RUN apk update && apk upgrade
 
 ADD build/libs/pivio-server-1.1.0.jar /pivio-server.jar
 
